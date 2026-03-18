@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2>Instructor Profile</h2>
+<form method="post">
+    {{ form.hidden_tag() }}
+    <div class="mb-3">
+        {{ form.bio.label(class="form-label") }}
+        {{ form.bio(class="form-control", rows=5) }}
+        {% for error in form.bio.errors %}
+        <span class="text-danger">{{ error }}</span>
+        {% endfor %}
+    </div>
+    <div class="mb-3">
+        {{ form.hourly_rate.label(class="form-label") }}
+        {{ form.hourly_rate(class="form-control") }}
+        {% for error in form.hourly_rate.errors %}
+        <span class="text-danger">{{ error }}</span>
+        {% endfor %}
+    </div>
+    <button type="submit" class="btn btn-primary">Save</button>
+</form>
+{% endblock %}

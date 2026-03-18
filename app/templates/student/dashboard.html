@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2>Student Dashboard</h2>
+<p>Welcome, {{ current_user.username }}!</p>
+
+<h3>Your Upcoming Lessons</h3>
+{% if lessons %}
+<table class="table">
+    <thead>
+        <tr>
+            <th>Instructor</th>
+            <th>Date</th>
+            <th>Time</th>
+            <th>Duration</th>
+            <th>Status</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for lesson in lessons %}
+        <tr>
+            <td>{{ lesson.instructor.username }}</td>
+            <td>{{ lesson.date }}</td>
+            <td>{{ lesson.time }}</td>
+            <td>{{ lesson.duration }} min</td>
+            <td>{{ lesson.status }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<p>No lessons booked yet.</p>
+{% endif %}
+<a href="{{ url_for('student.book_lesson') }}" class="btn btn-primary">Book a Lesson</a>
+<a href="{{ url_for('student.profile') }}" class="btn btn-secondary">Edit Profile</a>
+{% endblock %}

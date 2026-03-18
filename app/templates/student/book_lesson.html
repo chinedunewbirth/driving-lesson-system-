@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2>Book a Lesson</h2>
+<form method="post" novalidate>
+    {{ form.hidden_tag() }}
+    <div class="mb-3">
+        {{ form.instructor_id.label(class="form-label") }}
+        {{ form.instructor_id(class="form-select") }}
+        {% for error in form.instructor_id.errors %}
+        <span class="text-danger">{{ error }}</span>
+        {% endfor %}
+    </div>
+    <div class="mb-3">
+        {{ form.date.label(class="form-label") }}
+        {{ form.date(class="form-control", type="date") }}
+        {% for error in form.date.errors %}
+        <span class="text-danger">{{ error }}</span>
+        {% endfor %}
+    </div>
+    <div class="mb-3">
+        {{ form.time.label(class="form-label") }}
+        {{ form.time(class="form-control", type="time") }}
+        {% for error in form.time.errors %}
+        <span class="text-danger">{{ error }}</span>
+        {% endfor %}
+    </div>
+    <div class="mb-3">
+        {{ form.duration.label(class="form-label") }}
+        {{ form.duration(class="form-control") }}
+        {% for error in form.duration.errors %}
+        <span class="text-danger">{{ error }}</span>
+        {% endfor %}
+    </div>
+    <button type="submit" class="btn btn-primary">Book</button>
+</form>
+{% endblock %}
