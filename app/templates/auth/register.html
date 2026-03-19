@@ -8,7 +8,7 @@
         <div class="card border-0 shadow-lg">
             <div class="card-header bg-success text-white text-center">
                 <h4 class="card-title mb-0">
-                    <i class="fas fa-user-plus me-2"></i>Create Your Account
+                    <i class="fas fa-user-plus me-2"></i>Register as Instructor
                 </h4>
             </div>
             <div class="card-body p-4">
@@ -60,18 +60,10 @@
                     </div>
 
                     <div class="mb-4">
-                        {{ form.role.label(class="form-label fw-bold") }}
-                        {{ form.role(class="form-select form-select-lg") }}
-                        {% for error in form.role.errors %}
-                        <div class="text-danger mt-1">
-                            <small><i class="fas fa-exclamation-triangle me-1"></i>{{ error }}</small>
-                        </div>
-                        {% endfor %}
-                        <div class="form-text">
-                            <small class="text-muted">
-                                <i class="fas fa-info-circle me-1"></i>
-                                Select your role: Students learn to drive, Instructors teach driving lessons.
-                            </small>
+                        <div class="alert alert-info" role="alert">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <strong>Instructor Registration:</strong> Only driving instructors can register directly.
+                            Students must be registered by their instructor.
                         </div>
                     </div>
 

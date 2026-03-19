@@ -1,8 +1,8 @@
 from flask import Blueprint, render_template, flash, redirect, url_for, request
 from flask_login import login_required, current_user
 from app import db
-from app.models import Lesson, InstructorProfile
-from app.forms import InstructorProfileForm
+from app.models import Lesson, InstructorProfile, User, StudentProfile
+from app.forms import InstructorProfileForm, InstructorRegisterStudentForm
 
 bp = Blueprint('instructor', __name__)
 
@@ -36,3 +36,22 @@ def profile():
         form.bio.data = current_user.instructor_profile.bio
         form.hourly_rate.data = current_user.instructor_profile.hourly_rate
     return render_template('instructor/profile.html', form=form)
+
+@bp.route('/instructor/register-student', methods=['GET', 'POST'])
+@login_required
+def register_student():
+    if not current_user.is_instructor():
+        flash('Access denied.')
+        return redirect(url_for('main.index'))
+    form = InstructorRegisterStudentForm()
+    if form.validate_on_submit():
+        user = User(username=form.username.data, email=form.email.data, role='student')
+        user.set_password(form.password.data)
+        db.session.add(user)
+        db.session.commit()
+        profile = StudentProfile(user_id=user.id)
+        db.session.add(profile)
+        db.session.commit()
+        flash('Student registered successfully!')
+        return redirect(url_for('instructor.dashboard'))
+    return render_template('instructor/register_student.html', form=form)

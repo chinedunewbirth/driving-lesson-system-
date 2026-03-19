@@ -42,10 +42,6 @@ def register():
             profile = InstructorProfile(user_id=user.id)
             db.session.add(profile)
             db.session.commit()
-        elif form.role.data == 'student':
-            profile = StudentProfile(user_id=user.id)
-            db.session.add(profile)
-            db.session.commit()
-        flash('Congratulations, you are now a registered user!')
+        flash('Congratulations, you are now a registered instructor!')
         return redirect(url_for('auth.login'))
     return render_template('auth/register.html', title='Register', form=form)
