@@ -6,16 +6,35 @@ RUN apt-get update && apt-get install -y \
     libpq-dev \
     && rm -rf /var/lib/apt/lists/*
 
+# Create a non-root user
+RUN useradd --create-home --shell /bin/bash app
+
 WORKDIR /app
 
+# Copy requirements first for better caching
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
+# Copy application code
 COPY . .
 
+# Change ownership of the app directory to the app user
+RUN chown -R app:app /app
+
+# Switch to non-root user
+USER app
+
+# Environment variables
 ENV FLASK_APP=run.py
 ENV FLASK_ENV=production
+ENV PYTHONUNBUFFERED=1
 
+# Expose port
 EXPOSE 5000
 
-CMD ["gunicorn", "--bind", "0.0.0.0:5000", "run:app"]
+# Health check (disabled for now)
+# HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
+#     CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:5000').read()" || exit 1
+
+# Start the application
+CMD ["gunicorn", "--bind", "0.0.0.0:5000", "--workers", "4", "--threads", "2", "run:app"]

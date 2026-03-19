@@ -1,24 +1,56 @@
 {% extends "base.html" %}
 
+{% block title %}Sign In - DriveSmart{% endblock %}
+
 {% block content %}
-<h2>Sign In</h2>
-<form method="post" novalidate>
-    {{ form.hidden_tag() }}
-    <div class="mb-3">
-        {{ form.username.label(class="form-label") }}
-        {{ form.username(class="form-control") }}
-        {% for error in form.username.errors %}
-        <span class="text-danger">{{ error }}</span>
-        {% endfor %}
+<div class="row justify-content-center">
+    <div class="col-md-6 col-lg-4">
+        <div class="card border-0 shadow-lg">
+            <div class="card-header bg-primary text-white text-center">
+                <h4 class="card-title mb-0">
+                    <i class="fas fa-sign-in-alt me-2"></i>Sign In
+                </h4>
+            </div>
+            <div class="card-body p-4">
+                <form method="post" novalidate>
+                    {{ form.hidden_tag() }}
+
+                    <div class="mb-3">
+                        {{ form.username.label(class="form-label fw-bold") }}
+                        {{ form.username(class="form-control form-control-lg", placeholder="Enter your username") }}
+                        {% for error in form.username.errors %}
+                        <div class="text-danger mt-1">
+                            <small><i class="fas fa-exclamation-triangle me-1"></i>{{ error }}</small>
+                        </div>
+                        {% endfor %}
+                    </div>
+
+                    <div class="mb-4">
+                        {{ form.password.label(class="form-label fw-bold") }}
+                        {{ form.password(class="form-control form-control-lg", placeholder="Enter your password") }}
+                        {% for error in form.password.errors %}
+                        <div class="text-danger mt-1">
+                            <small><i class="fas fa-exclamation-triangle me-1"></i>{{ error }}</small>
+                        </div>
+                        {% endfor %}
+                    </div>
+
+                    <div class="d-grid">
+                        {{ form.submit(class="btn btn-primary btn-lg") }}
+                    </div>
+                </form>
+
+                <hr class="my-4">
+
+                <div class="text-center">
+                    <p class="mb-0">New to DriveSmart?
+                        <a href="{{ url_for('auth.register') }}" class="text-primary fw-bold">
+                            Create an account
+                        </a>
+                    </p>
+                </div>
+            </div>
+        </div>
     </div>
-    <div class="mb-3">
-        {{ form.password.label(class="form-label") }}
-        {{ form.password(class="form-control") }}
-        {% for error in form.password.errors %}
-        <span class="text-danger">{{ error }}</span>
-        {% endfor %}
-    </div>
-    <button type="submit" class="btn btn-primary">Sign In</button>
-</form>
-<p>New User? <a href="{{ url_for('auth.register') }}">Click to Register!</a></p>
+</div>
 {% endblock %}

@@ -33,13 +33,13 @@ class InstructorProfile(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     bio = db.Column(db.String(500))
     hourly_rate = db.Column(db.Float)
-    user = db.relationship('User', backref='instructor_profile')
+    user = db.relationship('User', backref=db.backref('instructor_profile', uselist=False))
 
 class StudentProfile(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     phone = db.Column(db.String(20))
-    user = db.relationship('User', backref='student_profile')
+    user = db.relationship('User', backref=db.backref('student_profile', uselist=False))
 
 class Lesson(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -48,6 +48,10 @@ class Lesson(db.Model):
     date = db.Column(db.Date)
     time = db.Column(db.Time)
     duration = db.Column(db.Integer)  # minutes
+    status = db.Column(db.String(20), default='confirmed')  # confirmed, cancelled, completed
+
+    student = db.relationship('User', foreign_keys=[student_id], backref='student_lessons')
+    instructor = db.relationship('User', foreign_keys=[instructor_id], backref='instructor_lessons')
     status = db.Column(db.String(20), default='scheduled')
     student = db.relationship('User', foreign_keys=[student_id], backref='student_lessons')
     instructor = db.relationship('User', foreign_keys=[instructor_id], backref='instructor_lessons')

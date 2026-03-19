@@ -1,0 +1,479 @@
+{% extends "base.html" %}
+
+{% block title %}Manage Lessons - DriveSmart Admin{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2 class="mb-0">
+                    <i class="fas fa-calendar-alt me-2 text-info"></i>
+                    Manage Lessons
+                </h2>
+                <div class="btn-group">
+                    <a href="{{ url_for('admin.dashboard') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+                    </a>
+                    <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addLessonModal">
+                        <i class="fas fa-calendar-plus me-2"></i>Add Lesson
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters and Search -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="fas fa-search"></i></span>
+                        <input type="text" class="form-control" id="searchInput" placeholder="Search lessons...">
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <select class="form-select" id="statusFilter">
+                        <option value="">All Status</option>
+                        <option value="confirmed">Confirmed</option>
+                        <option value="completed">Completed</option>
+                        <option value="cancelled">Cancelled</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <input type="date" class="form-control" id="dateFilter">
+                </div>
+                <div class="col-md-3">
+                    <select class="form-select" id="instructorFilter">
+                        <option value="">All Instructors</option>
+                        {% for user in users %}
+                            {% if user.role == 'instructor' %}
+                                <option value="{{ user.id }}">{{ user.username }}</option>
+                            {% endif %}
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <button class="btn btn-outline-primary w-100" onclick="clearFilters()">
+                        <i class="fas fa-times me-2"></i>Clear
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Lessons Table -->
+    <div class="card border-0 shadow-sm">
+        <div class="card-header bg-light">
+            <div class="d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-calendar-check me-2"></i>Lessons ({{ lessons|length }})
+                </h5>
+                <div class="btn-group btn-group-sm">
+                    <button class="btn btn-outline-secondary" onclick="exportLessons()">
+                        <i class="fas fa-download me-1"></i>Export
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0" id="lessonsTable">
+                    <thead class="table-light">
+                        <tr>
+                            <th><input type="checkbox" id="selectAll"></th>
+                            <th><i class="fas fa-user-graduate me-1"></i>Student</th>
+                            <th><i class="fas fa-chalkboard-teacher me-1"></i>Instructor</th>
+                            <th><i class="fas fa-calendar me-1"></i>Date</th>
+                            <th><i class="fas fa-clock me-1"></i>Time</th>
+                            <th><i class="fas fa-hourglass me-1"></i>Duration</th>
+                            <th><i class="fas fa-dollar-sign me-1"></i>Cost</th>
+                            <th><i class="fas fa-info-circle me-1"></i>Status</th>
+                            <th><i class="fas fa-cogs me-1"></i>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for lesson in lessons %}
+                        <tr class="lesson-row" data-status="{{ lesson.status }}" data-instructor="{{ lesson.instructor.id }}" data-date="{{ lesson.date }}">
+                            <td><input type="checkbox" class="lesson-checkbox" value="{{ lesson.id }}"></td>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <div class="avatar-circle-sm me-3">
+                                        <i class="fas fa-user-graduate text-white"></i>
+                                    </div>
+                                    <div>
+                                        <strong>{{ lesson.student.username }}</strong>
+                                        <br>
+                                        <small class="text-muted">{{ lesson.student.email }}</small>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <div class="avatar-circle-sm me-3">
+                                        <i class="fas fa-chalkboard-teacher text-white"></i>
+                                    </div>
+                                    <div>
+                                        <strong>{{ lesson.instructor.username }}</strong>
+                                        {% if lesson.instructor.instructor_profile %}
+                                            <br>
+                                            <small class="text-muted">${{ lesson.instructor.instructor_profile.hourly_rate }}/hr</small>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <strong>{{ lesson.date.strftime('%b %d, %Y') }}</strong>
+                                <br>
+                                <small class="text-muted">{{ lesson.date.strftime('%A') }}</small>
+                            </td>
+                            <td>{{ lesson.time.strftime('%I:%M %p') }}</td>
+                            <td>{{ lesson.duration }} hour{{ 's' if lesson.duration != 1 else '' }}</td>
+                            <td class="text-success fw-bold">
+                                {% if lesson.instructor.instructor_profile %}
+                                    ${{ lesson.duration * lesson.instructor.instructor_profile.hourly_rate }}
+                                {% else %}
+                                    $0
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if lesson.status == 'confirmed' %}
+                                    <span class="badge bg-success">Confirmed</span>
+                                {% elif lesson.status == 'completed' %}
+                                    <span class="badge bg-primary">Completed</span>
+                                {% elif lesson.status == 'cancelled' %}
+                                    <span class="badge bg-danger">Cancelled</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">{{ lesson.status }}</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="btn-group" role="group">
+                                    <button class="btn btn-sm btn-outline-primary" onclick="viewLesson({{ lesson.id }})" title="View Details">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-info" onclick="editLesson({{ lesson.id }})" title="Edit Lesson">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <div class="dropdown">
+                                        <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                            <i class="fas fa-ellipsis-h"></i>
+                                        </button>
+                                        <ul class="dropdown-menu">
+                                            {% if lesson.status == 'confirmed' %}
+                                            <li><a class="dropdown-item" href="#" onclick="completeLesson({{ lesson.id }})">
+                                                <i class="fas fa-check me-2"></i>Mark Complete
+                                            </a></li>
+                                            {% endif %}
+                                            <li><a class="dropdown-item text-warning" href="#" onclick="cancelLesson({{ lesson.id }})">
+                                                <i class="fas fa-times me-2"></i>Cancel Lesson
+                                            </a></li>
+                                            <li><a class="dropdown-item text-danger" href="#" onclick="deleteLesson({{ lesson.id }})">
+                                                <i class="fas fa-trash me-2"></i>Delete Lesson
+                                            </a></li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="card-footer bg-light">
+            <div class="row align-items-center">
+                <div class="col-md-6">
+                    <small class="text-muted">
+                        Showing {{ lessons|length }} of {{ lessons|length }} lessons
+                    </small>
+                </div>
+                <div class="col-md-6 text-end">
+                    <div class="btn-group btn-group-sm">
+                        <button class="btn btn-outline-secondary" disabled>
+                            <i class="fas fa-chevron-left"></i>
+                        </button>
+                        <button class="btn btn-secondary">1</button>
+                        <button class="btn btn-outline-secondary" disabled>
+                            <i class="fas fa-chevron-right"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bulk Actions -->
+    <div class="row mt-3" id="bulkActions" style="display: none;">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span><strong id="selectedCount">0</strong> lessons selected</span>
+                        <div class="btn-group">
+                            <button class="btn btn-outline-success" onclick="bulkAction('complete')">
+                                <i class="fas fa-check me-2"></i>Mark Complete
+                            </button>
+                            <button class="btn btn-outline-warning" onclick="bulkAction('cancel')">
+                                <i class="fas fa-times me-2"></i>Cancel
+                            </button>
+                            <button class="btn btn-outline-danger" onclick="bulkAction('delete')">
+                                <i class="fas fa-trash me-2"></i>Delete
+                            </button>
+                            <button class="btn btn-outline-secondary" onclick="clearSelection()">
+                                <i class="fas fa-times me-2"></i>Clear
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Lesson Modal -->
+<div class="modal fade" id="addLessonModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-calendar-plus me-2"></i>Schedule New Lesson
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="addLessonForm">
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="student" class="form-label">Student *</label>
+                                <select class="form-select" id="student" required>
+                                    <option value="">Select Student</option>
+                                    {% for user in users %}
+                                        {% if user.role == 'student' %}
+                                            <option value="{{ user.id }}">{{ user.username }} ({{ user.email }})</option>
+                                        {% endif %}
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="instructor" class="form-label">Instructor *</label>
+                                <select class="form-select" id="instructor" required>
+                                    <option value="">Select Instructor</option>
+                                    {% for user in users %}
+                                        {% if user.role == 'instructor' %}
+                                            <option value="{{ user.id }}">{{ user.username }} ({{ user.email }})</option>
+                                        {% endif %}
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="date" class="form-label">Date *</label>
+                                <input type="date" class="form-control" id="date" required>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="time" class="form-label">Time *</label>
+                                <input type="time" class="form-control" id="time" required>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="duration" class="form-label">Duration (hours) *</label>
+                                <select class="form-select" id="duration" required>
+                                    <option value="">Select Duration</option>
+                                    <option value="1">1 hour</option>
+                                    <option value="1.5">1.5 hours</option>
+                                    <option value="2">2 hours</option>
+                                    <option value="3">3 hours</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="notes" class="form-label">Notes</label>
+                        <textarea class="form-control" id="notes" rows="3" placeholder="Optional notes about the lesson"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-success">Schedule Lesson</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+.avatar-circle-sm {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.9rem;
+}
+
+.lesson-row:hover {
+    background-color: #f8f9fa !important;
+}
+
+.table th {
+    border-top: none;
+    font-weight: 600;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('searchInput');
+    const statusFilter = document.getElementById('statusFilter');
+    const dateFilter = document.getElementById('dateFilter');
+    const instructorFilter = document.getElementById('instructorFilter');
+    const selectAll = document.getElementById('selectAll');
+    const lessonCheckboxes = document.querySelectorAll('.lesson-checkbox');
+    const bulkActions = document.getElementById('bulkActions');
+    const selectedCount = document.getElementById('selectedCount');
+
+    // Search and filter functionality
+    searchInput.addEventListener('input', filterLessons);
+    statusFilter.addEventListener('change', filterLessons);
+    dateFilter.addEventListener('change', filterLessons);
+    instructorFilter.addEventListener('change', filterLessons);
+
+    // Select all functionality
+    selectAll.addEventListener('change', function() {
+        lessonCheckboxes.forEach(checkbox => {
+            checkbox.checked = this.checked;
+        });
+        updateBulkActions();
+    });
+
+    // Individual checkbox functionality
+    lessonCheckboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', function() {
+            const checkedBoxes = document.querySelectorAll('.lesson-checkbox:checked');
+            selectAll.checked = checkedBoxes.length === lessonCheckboxes.length;
+            selectAll.indeterminate = checkedBoxes.length > 0 && checkedBoxes.length < lessonCheckboxes.length;
+            updateBulkActions();
+        });
+    });
+
+    // Add lesson form
+    document.getElementById('addLessonForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        // TODO: Implement add lesson functionality
+        alert('Add lesson functionality coming soon!');
+        bootstrap.Modal.getInstance(document.getElementById('addLessonModal')).hide();
+    });
+});
+
+function filterLessons() {
+    const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+    const statusFilter = document.getElementById('statusFilter').value;
+    const dateFilter = document.getElementById('dateFilter').value;
+    const instructorFilter = document.getElementById('instructorFilter').value;
+    const rows = document.querySelectorAll('.lesson-row');
+
+    rows.forEach(row => {
+        const studentName = row.cells[1].textContent.toLowerCase();
+        const instructorName = row.cells[2].textContent.toLowerCase();
+        const status = row.dataset.status;
+        const instructor = row.dataset.instructor;
+        const lessonDate = row.dataset.date;
+
+        const matchesSearch = studentName.includes(searchTerm) || instructorName.includes(searchTerm);
+        const matchesStatus = !statusFilter || status === statusFilter;
+        const matchesInstructor = !instructorFilter || instructor === instructorFilter;
+        const matchesDate = !dateFilter || lessonDate === dateFilter;
+
+        row.style.display = matchesSearch && matchesStatus && matchesInstructor && matchesDate ? '' : 'none';
+    });
+}
+
+function clearFilters() {
+    document.getElementById('searchInput').value = '';
+    document.getElementById('statusFilter').value = '';
+    document.getElementById('dateFilter').value = '';
+    document.getElementById('instructorFilter').value = '';
+    filterLessons();
+}
+
+function updateBulkActions() {
+    const checkedBoxes = document.querySelectorAll('.lesson-checkbox:checked');
+    const bulkActions = document.getElementById('bulkActions');
+    const selectedCount = document.getElementById('selectedCount');
+
+    if (checkedBoxes.length > 0) {
+        bulkActions.style.display = 'block';
+        selectedCount.textContent = checkedBoxes.length;
+    } else {
+        bulkActions.style.display = 'none';
+    }
+}
+
+function clearSelection() {
+    document.querySelectorAll('.lesson-checkbox').forEach(checkbox => {
+        checkbox.checked = false;
+    });
+    document.getElementById('selectAll').checked = false;
+    updateBulkActions();
+}
+
+function viewLesson(lessonId) {
+    // TODO: Implement view lesson details
+    alert(`View lesson ${lessonId} details coming soon!`);
+}
+
+function editLesson(lessonId) {
+    // TODO: Implement edit lesson
+    alert(`Edit lesson ${lessonId} coming soon!`);
+}
+
+function completeLesson(lessonId) {
+    if (confirm('Mark this lesson as completed?')) {
+        // TODO: Implement complete lesson
+        alert(`Complete lesson ${lessonId} coming soon!`);
+    }
+}
+
+function cancelLesson(lessonId) {
+    if (confirm('Cancel this lesson?')) {
+        // TODO: Implement cancel lesson
+        alert(`Cancel lesson ${lessonId} coming soon!`);
+    }
+}
+
+function deleteLesson(lessonId) {
+    if (confirm('Are you sure you want to delete this lesson?')) {
+        // TODO: Implement delete lesson
+        alert(`Delete lesson ${lessonId} coming soon!`);
+    }
+}
+
+function bulkAction(action) {
+    const selectedLessons = Array.from(document.querySelectorAll('.lesson-checkbox:checked')).map(cb => cb.value);
+    if (selectedLessons.length === 0) return;
+
+    if (confirm(`Are you sure you want to ${action} ${selectedLessons.length} lesson(s)?`)) {
+        // TODO: Implement bulk actions
+        alert(`Bulk ${action} coming soon!`);
+    }
+}
+
+function exportLessons() {
+    // TODO: Implement export functionality
+    alert('Export functionality coming soon!');
+}
+</script>
+{% endblock %}

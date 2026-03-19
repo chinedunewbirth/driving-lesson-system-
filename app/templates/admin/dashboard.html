@@ -1,55 +1,241 @@
 {% extends "base.html" %}
 
-{% block content %}
-<h2>Admin Dashboard</h2>
-<p>Welcome, Admin {{ current_user.username }}!</p>
+{% block title %}Admin Dashboard - DriveSmart{% endblock %}
 
-<div class="row">
-    <div class="col-md-6">
-        <h3>Users</h3>
-        <table class="table">
-            <thead>
-                <tr>
-                    <th>ID</th>
-                    <th>Username</th>
-                    <th>Email</th>
-                    <th>Role</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for user in users %}
-                <tr>
-                    <td>{{ user.id }}</td>
-                    <td>{{ user.username }}</td>
-                    <td>{{ user.email }}</td>
-                    <td>{{ user.role }}</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2 class="mb-0">
+                    <i class="fas fa-crown me-2 text-warning"></i>
+                    Admin Dashboard
+                </h2>
+                <div class="btn-group">
+                    <a href="{{ url_for('admin.users') }}" class="btn btn-outline-primary">
+                        <i class="fas fa-users me-2"></i>Manage Users
+                    </a>
+                    <a href="{{ url_for('admin.lessons') }}" class="btn btn-outline-info">
+                        <i class="fas fa-calendar-alt me-2"></i>Manage Lessons
+                    </a>
+                </div>
+            </div>
+        </div>
     </div>
-    <div class="col-md-6">
-        <h3>Lessons</h3>
-        <table class="table">
-            <thead>
-                <tr>
-                    <th>Student</th>
-                    <th>Instructor</th>
-                    <th>Date</th>
-                    <th>Time</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for lesson in lessons %}
-                <tr>
-                    <td>{{ lesson.student.username }}</td>
-                    <td>{{ lesson.instructor.username }}</td>
-                    <td>{{ lesson.date }}</td>
-                    <td>{{ lesson.time }}</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm text-center">
+                <div class="card-body">
+                    <i class="fas fa-users fa-3x text-primary mb-3"></i>
+                    <h5 class="card-title">Total Users</h5>
+                    <p class="card-text display-4 fw-bold text-primary">{{ users|length }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm text-center">
+                <div class="card-body">
+                    <i class="fas fa-chalkboard-teacher fa-3x text-success mb-3"></i>
+                    <h5 class="card-title">Instructors</h5>
+                    <p class="card-text display-4 fw-bold text-success">
+                        {% set instructor_count = 0 %}
+                        {% for user in users %}
+                            {% if user.role == 'instructor' %}
+                                {% set instructor_count = instructor_count + 1 %}
+                            {% endif %}
+                        {% endfor %}
+                        {{ instructor_count }}
+                    </p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm text-center">
+                <div class="card-body">
+                    <i class="fas fa-user-graduate fa-3x text-info mb-3"></i>
+                    <h5 class="card-title">Students</h5>
+                    <p class="card-text display-4 fw-bold text-info">
+                        {% set student_count = 0 %}
+                        {% for user in users %}
+                            {% if user.role == 'student' %}
+                                {% set student_count = student_count + 1 %}
+                            {% endif %}
+                        {% endfor %}
+                        {{ student_count }}
+                    </p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm text-center">
+                <div class="card-body">
+                    <i class="fas fa-calendar-check fa-3x text-warning mb-3"></i>
+                    <h5 class="card-title">Total Lessons</h5>
+                    <p class="card-text display-4 fw-bold text-warning">{{ lessons|length }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Activity -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-light">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-clock me-2"></i>Recent Lessons
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if lessons %}
+                    <div class="list-group list-group-flush">
+                        {% for lesson in lessons[:5] %}
+                        <div class="list-group-item px-0">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <strong>{{ lesson.student.username }}</strong> with {{ lesson.instructor.username }}
+                                    <br>
+                                    <small class="text-muted">
+                                        {{ lesson.date.strftime('%b %d, %Y') }} at {{ lesson.time.strftime('%I:%M %p') }}
+                                    </small>
+                                </div>
+                                <span class="badge bg-{{ 'success' if lesson.status == 'confirmed' else 'secondary' }}">
+                                    {{ lesson.status }}
+                                </span>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-center py-3">
+                        <i class="fas fa-calendar-times fa-2x text-muted mb-2"></i>
+                        <p class="text-muted mb-0">No lessons scheduled</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-light">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-user-plus me-2"></i>Recent Users
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if users %}
+                    <div class="list-group list-group-flush">
+                        {% for user in users[:5] %}
+                        <div class="list-group-item px-0">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <strong>{{ user.username }}</strong>
+                                    <br>
+                                    <small class="text-muted">{{ user.email }}</small>
+                                </div>
+                                <span class="badge bg-{{ 'primary' if user.role == 'student' else 'success' if user.role == 'instructor' else 'warning' }}">
+                                    {{ user.role }}
+                                </span>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-center py-3">
+                        <i class="fas fa-users fa-2x text-muted mb-2"></i>
+                        <p class="text-muted mb-0">No users registered</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-light">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-tools me-2"></i>Quick Actions
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-3">
+                            <a href="{{ url_for('admin.users') }}" class="btn btn-outline-primary w-100">
+                                <i class="fas fa-users me-2"></i>
+                                <div>Manage Users</div>
+                            </a>
+                        </div>
+                        <div class="col-md-3">
+                            <a href="{{ url_for('admin.lessons') }}" class="btn btn-outline-info w-100">
+                                <i class="fas fa-calendar-alt me-2"></i>
+                                <div>Manage Lessons</div>
+                            </a>
+                        </div>
+                        <div class="col-md-3">
+                            <button class="btn btn-outline-success w-100" onclick="generateReport()">
+                                <i class="fas fa-chart-bar me-2"></i>
+                                <div>Generate Report</div>
+                            </button>
+                        </div>
+                        <div class="col-md-3">
+                            <a href="{{ url_for('chatbot.chatbot') }}" class="btn btn-outline-warning w-100">
+                                <i class="fas fa-robot me-2"></i>
+                                <div>AI Assistant</div>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- System Status -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-light">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-server me-2"></i>System Status
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-md-3">
+                            <i class="fas fa-database fa-2x text-success mb-2"></i>
+                            <h6>Database</h6>
+                            <span class="badge bg-success">Online</span>
+                        </div>
+                        <div class="col-md-3">
+                            <i class="fas fa-envelope fa-2x text-success mb-2"></i>
+                            <h6>Email Service</h6>
+                            <span class="badge bg-success">Active</span>
+                        </div>
+                        <div class="col-md-3">
+                            <i class="fas fa-shield-alt fa-2x text-success mb-2"></i>
+                            <h6>Security</h6>
+                            <span class="badge bg-success">Secure</span>
+                        </div>
+                        <div class="col-md-3">
+                            <i class="fas fa-clock fa-2x text-info mb-2"></i>
+                            <h6>Last Backup</h6>
+                            <span class="badge bg-info">Today</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
+
+<script>
+function generateReport() {
+    alert('Report generation feature coming soon!');
+    // TODO: Implement report generation functionality
+}
+</script>
 {% endblock %}
