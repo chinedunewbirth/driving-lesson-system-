@@ -23,21 +23,26 @@ def book_lesson():
         return redirect(url_for('main.index'))
     form = BookLessonForm()
     instructors = User.query.filter_by(role='instructor').all()
-    form.instructor_id.choices = [(i.id, i.username) for i in instructors]
     if form.validate_on_submit():
+        # Validate that the selected instructor exists and is an instructor
+        instructor = User.query.filter_by(id=form.instructor_id.data, role='instructor').first()
+        if not instructor:
+            flash('Invalid instructor selected.')
+            return redirect(url_for('student.book_lesson'))
+        
         lesson = Lesson(
             student_id=current_user.id,
             instructor_id=form.instructor_id.data,
             date=form.date.data,
             time=form.time.data,
-            duration=form.duration.data,
-            status='scheduled'
+            duration=form.duration.data * 60,  # Convert hours to minutes
+            status='confirmed'
         )
         db.session.add(lesson)
         db.session.commit()
         flash('Lesson booked successfully!')
         return redirect(url_for('student.dashboard'))
-    return render_template('student/book_lesson.html', form=form)
+    return render_template('student/book_lesson.html', form=form, instructors=instructors)
 
 @bp.route('/student/profile', methods=['GET', 'POST'])
 @login_required

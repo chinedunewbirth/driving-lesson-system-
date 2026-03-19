@@ -1,5 +1,5 @@
 from flask_wtf import FlaskForm
-from wtforms import StringField, PasswordField, SubmitField, SelectField, DateField, TimeField, IntegerField, TextAreaField, FloatField
+from wtforms import StringField, PasswordField, SubmitField, SelectField, DateField, TimeField, IntegerField, TextAreaField, FloatField, RadioField
 from wtforms.validators import DataRequired, Email, EqualTo, ValidationError
 from app.models import User
 
@@ -36,10 +36,10 @@ class StudentProfileForm(FlaskForm):
     submit = SubmitField('Save')
 
 class BookLessonForm(FlaskForm):
-    instructor_id = SelectField('Instructor', coerce=int, validators=[DataRequired()])
+    instructor_id = IntegerField('Instructor', validators=[DataRequired()])
     date = DateField('Date', validators=[DataRequired()])
     time = TimeField('Time', validators=[DataRequired()])
-    duration = IntegerField('Duration (minutes)', validators=[DataRequired()])
+    duration = IntegerField('Duration (hours)', validators=[DataRequired()])
     submit = SubmitField('Book Lesson')
 
 class ChatbotForm(FlaskForm):

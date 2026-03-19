@@ -129,10 +129,14 @@
                                 <small class="text-muted">{{ lesson.date.strftime('%A') }}</small>
                             </td>
                             <td>{{ lesson.time.strftime('%I:%M %p') }}</td>
-                            <td>{{ lesson.duration }} hour{{ 's' if lesson.duration != 1 else '' }}</td>
+                            <td>{{ (lesson.duration / 60) }} hour{{ 's' if (lesson.duration / 60) != 1 else '' }}</td>
                             <td class="text-success fw-bold">
                                 {% if lesson.instructor.instructor_profile %}
-                                    ${{ lesson.duration * lesson.instructor.instructor_profile.hourly_rate }}
+                                {% if lesson.instructor.instructor_profile %}
+                                    ${{ ((lesson.duration / 60) * lesson.instructor.instructor_profile.hourly_rate) }}
+                                {% else %}
+                                    $0
+                                {% endif %}
                                 {% else %}
                                     $0
                                 {% endif %}

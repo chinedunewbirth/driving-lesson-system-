@@ -37,7 +37,7 @@
                     <p class="card-text display-4 fw-bold text-primary">
                         {% set total_hours = 0 %}
                         {% for lesson in lessons %}
-                            {% set total_hours = total_hours + lesson.duration %}
+                            {% set total_hours = total_hours + (lesson.duration / 60) %}
                         {% endfor %}
                         {{ total_hours }}
                     </p>
@@ -51,12 +51,12 @@
                     <h5 class="card-title">Total Earnings</h5>
                     <p class="card-text display-4 fw-bold text-warning">
                         {% set total_earnings = 0 %}
-                        {% if current_user.instructor_profile %}
+                        {% if current_user.instructor_profile and current_user.instructor_profile.hourly_rate %}
                             {% for lesson in lessons %}
-                                {% set total_earnings = total_earnings + (lesson.duration * current_user.instructor_profile.hourly_rate) %}
+                                {% set total_earnings = total_earnings + ((lesson.duration / 60) * current_user.instructor_profile.hourly_rate) %}
                             {% endfor %}
                         {% endif %}
-                        ${{ total_earnings }}
+                        ${{ "%.2f"|format(total_earnings) }}
                     </p>
                 </div>
             </div>
@@ -135,10 +135,10 @@
                                 <small class="text-muted">{{ lesson.date.strftime('%A') }}</small>
                             </td>
                             <td>{{ lesson.time.strftime('%I:%M %p') }}</td>
-                            <td>{{ lesson.duration }} hour{{ 's' if lesson.duration != 1 else '' }}</td>
+                            <td>{{ (lesson.duration / 60) }} hour{{ 's' if (lesson.duration / 60) != 1 else '' }}</td>
                             <td class="text-success fw-bold">
-                                {% if current_user.instructor_profile %}
-                                    ${{ lesson.duration * current_user.instructor_profile.hourly_rate }}
+                                {% if current_user.instructor_profile and current_user.instructor_profile.hourly_rate %}
+                                    ${{ "%.2f"|format((lesson.duration / 60) * current_user.instructor_profile.hourly_rate) }}
                                 {% else %}
                                     $0
                                 {% endif %}

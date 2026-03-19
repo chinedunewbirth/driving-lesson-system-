@@ -28,7 +28,7 @@
                             <div class="row">
                                 {% for instructor in instructors %}
                                 <div class="col-md-6 col-lg-4 mb-3">
-                                    <div class="instructor-card card h-100 border-0 shadow-sm">
+                                    <div class="instructor-card card h-100 border-0 shadow-sm" data-instructor-id="{{ instructor.id }}">
                                         <div class="card-body text-center">
                                             <div class="avatar-circle mx-auto mb-3">
                                                 <i class="fas fa-user-tie fa-2x text-primary"></i>
@@ -45,7 +45,7 @@
                                             </div>
                                             {% endif %}
                                             <div class="form-check">
-                                                <input class="form-check-input" type="radio" name="instructor_id" value="{{ instructor.id }}" id="instructor{{ instructor.id }}">
+                                                <input class="form-check-input instructor-radio" type="radio" name="instructor_id" value="{{ instructor.id }}" id="instructor{{ instructor.id }}">
                                                 <label class="form-check-label" for="instructor{{ instructor.id }}">
                                                     Select This Instructor
                                                 </label>
@@ -201,12 +201,13 @@ document.addEventListener('DOMContentLoaded', function() {
             this.classList.add('selected');
 
             // Get instructor data
-            const radio = this.querySelector('input[type="radio"]');
+            const instructorId = this.dataset.instructorId;
+            const radio = this.querySelector('.instructor-radio');
             const rateElement = this.querySelector('.badge');
             const rateText = rateElement ? rateElement.textContent : '$50/hour';
 
             selectedInstructor = {
-                id: radio.value,
+                id: instructorId,
                 name: this.querySelector('.card-title').textContent,
                 rate: parseFloat(rateText.replace('$', '').replace('/hour', ''))
             };
@@ -234,7 +235,7 @@ document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('summary-instructor').textContent = selectedInstructor.name;
             document.getElementById('summary-date').textContent = new Date(date).toLocaleDateString();
             document.getElementById('summary-time').textContent = time;
-            document.getElementById('summary-duration').textContent = duration + ' hours';
+            document.getElementById('summary-duration').textContent = duration + ' hour' + (duration != 1 ? 's' : '');
             document.getElementById('summary-cost').textContent = '$' + (selectedInstructor.rate * duration);
         }
     }

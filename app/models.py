@@ -52,6 +52,3 @@ class Lesson(db.Model):
 
     student = db.relationship('User', foreign_keys=[student_id], backref='student_lessons')
     instructor = db.relationship('User', foreign_keys=[instructor_id], backref='instructor_lessons')
-    status = db.Column(db.String(20), default='scheduled')
-    student = db.relationship('User', foreign_keys=[student_id], backref='student_lessons')
-    instructor = db.relationship('User', foreign_keys=[instructor_id], backref='instructor_lessons')

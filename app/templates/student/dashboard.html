@@ -35,7 +35,7 @@
                 <p class="card-text display-4 fw-bold text-warning">
                     {% set total_hours = 0 %}
                     {% for lesson in lessons %}
-                        {% set total_hours = total_hours + lesson.duration %}
+                        {% set total_hours = total_hours + (lesson.duration / 60) %}
                     {% endfor %}
                     {{ (total_hours / 60)|round(1) }}
                 </p>
@@ -82,7 +82,7 @@
                         </td>
                         <td>{{ lesson.date.strftime('%B %d, %Y') }}</td>
                         <td>{{ lesson.time.strftime('%I:%M %p') }}</td>
-                        <td>{{ lesson.duration }} minutes</td>
+                        <td>{{ (lesson.duration / 60) }} hour{{ 's' if (lesson.duration / 60) != 1 else '' }}</td>
                         <td>
                             <span class="badge bg-success">Confirmed</span>
                         </td>

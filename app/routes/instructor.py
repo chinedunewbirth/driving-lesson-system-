@@ -13,7 +13,7 @@ def dashboard():
         flash('Access denied.')
         return redirect(url_for('main.index'))
     lessons = Lesson.query.filter_by(instructor_id=current_user.id).all()
-    return render_template('instructor/dasboard.html', lessons=lessons)
+    return render_template('instructor/dashboard.html', lessons=lessons)
 
 @bp.route('/instructor/profile', methods=['GET', 'POST'])
 @login_required
