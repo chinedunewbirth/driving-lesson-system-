@@ -1,6 +1,7 @@
 from app import db, login
 from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
+from datetime import datetime
 
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -52,3 +53,20 @@ class Lesson(db.Model):
 
     student = db.relationship('User', foreign_keys=[student_id], backref='student_lessons')
     instructor = db.relationship('User', foreign_keys=[instructor_id], backref='instructor_lessons')
+
+
+class Payment(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    student_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    lesson_id = db.Column(db.Integer, db.ForeignKey('lesson.id'), nullable=True)
+    amount = db.Column(db.Float, nullable=False)
+    currency = db.Column(db.String(3), default='GBP')
+    status = db.Column(db.String(20), default='pending')  # pending, completed, failed, refunded
+    payment_method = db.Column(db.String(50), default='card')
+    stripe_payment_intent_id = db.Column(db.String(255), unique=True, nullable=True)
+    description = db.Column(db.String(255))
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    student = db.relationship('User', backref='payments')
+    lesson = db.relationship('Lesson', backref='payment')

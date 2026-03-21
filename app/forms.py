@@ -13,7 +13,7 @@ class RegistrationForm(FlaskForm):
     email = StringField('Email', validators=[DataRequired(), Email()])
     password = PasswordField('Password', validators=[DataRequired()])
     password2 = PasswordField('Repeat Password', validators=[DataRequired(), EqualTo('password')])
-    role = SelectField('Role', choices=[('instructor', 'Instructor')], validators=[DataRequired()])
+    role = SelectField('Role', choices=[('instructor', 'Instructor'), ('student', 'Student')], validators=[DataRequired()])
     submit = SubmitField('Register')
 
     def validate_username(self, username):
@@ -62,3 +62,10 @@ class BookLessonForm(FlaskForm):
 class ChatbotForm(FlaskForm):
     message = StringField('Your message', validators=[DataRequired()])
     submit = SubmitField('Send')
+
+class PaymentForm(FlaskForm):
+    """Form for payment processing via Stripe"""
+    card_holder_name = StringField('Full Name', validators=[DataRequired()])
+    email = StringField('Email', validators=[DataRequired(), Email()])
+    amount = FloatField('Lesson Fee (USD)', validators=[DataRequired()])
+    submit = SubmitField('Proceed to Payment')

@@ -34,14 +34,25 @@ def register():
         return redirect(url_for('main.index'))
     form = RegistrationForm()
     if form.validate_on_submit():
-        user = User(username=form.username.data, email=form.email.data, role=form.role.data)
-        user.set_password(form.password.data)
-        db.session.add(user)
-        db.session.commit()
-        if form.role.data == 'instructor':
-            profile = InstructorProfile(user_id=user.id)
-            db.session.add(profile)
+        try:
+            user = User(username=form.username.data, email=form.email.data, role=form.role.data)
+            user.set_password(form.password.data)
+            db.session.add(user)
             db.session.commit()
-        flash('Congratulations, you are now a registered instructor!')
-        return redirect(url_for('auth.login'))
+
+            if form.role.data == 'instructor':
+                profile = InstructorProfile(user_id=user.id)
+                db.session.add(profile)
+                db.session.commit()
+            elif form.role.data == 'student':
+                profile = StudentProfile(user_id=user.id)
+                db.session.add(profile)
+                db.session.commit()
+
+            flash('Congratulations, you are now registered!')
+            return redirect(url_for('auth.login'))
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Registration failed: {str(e)}')
+            return redirect(url_for('auth.register'))
     return render_template('auth/register.html', title='Register', form=form)

@@ -1,0 +1,116 @@
+/* Custom styles for DriveSmart */
+
+/* Sticky Footer Layout */
+html {
+    height: 100%;
+}
+
+body {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Ensure content area can grow */
+main > .container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Footer Styles */
+footer {
+    margin-top: auto;
+    flex-shrink: 0;
+}
+
+/* Navbar Styles */
+.navbar-brand {
+    font-weight: 700;
+}
+
+/* Form Styles */
+.form-control:focus {
+    border-color: #0d6efd;
+    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+}
+
+/* Button Styles */
+.btn-success {
+    background-color: #198754;
+    border-color: #198754;
+}
+
+.btn-success:hover {
+    background-color: #157347;
+    border-color: #146c43;
+}
+
+/* Alert Styles */
+.alert {
+    border-radius: 0.5rem;
+}
+
+/* Card Styles */
+.card {
+    border: none;
+    border-radius: 1rem;
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+}
+
+.card-header {
+    border-radius: 1rem 1rem 0 0 !important;
+}
+
+/* Chatbot Styles */
+.chat-container {
+    height: 500px;
+    overflow-y: auto;
+    border: 1px solid #dee2e6;
+    border-radius: 0.5rem;
+    padding: 1rem;
+    background-color: #f8f9fa;
+}
+
+.chat-message {
+    margin-bottom: 1rem;
+    padding: 0.75rem;
+    border-radius: 0.5rem;
+}
+
+.chat-message.user {
+    background-color: #007bff;
+    color: white;
+    margin-left: 2rem;
+}
+
+.chat-message.bot {
+    background-color: #e9ecef;
+    margin-right: 2rem;
+}
+
+.typing-indicator {
+    display: none;
+    font-style: italic;
+    color: #6c757d;
+}
+
+/* Auth Pages - Center content vertically */
+.auth-page {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100%;
+}
+
+/* Ensure auth forms are properly centered */
+.auth-page > div {
+    width: 100%;
+    max-width: 600px;
+}

@@ -35,9 +35,9 @@
                 <p class="card-text display-4 fw-bold text-warning">
                     {% set total_hours = 0 %}
                     {% for lesson in lessons %}
-                        {% set total_hours = total_hours + (lesson.duration / 60) %}
+                        {% set total_hours = total_hours + ((lesson.duration or 0) / 60) %}
                     {% endfor %}
-                    {{ (total_hours / 60)|round(1) }}
+                    {{ total_hours|round(1) }}
                 </p>
             </div>
         </div>
@@ -78,13 +78,13 @@
                     {% for lesson in lessons %}
                     <tr>
                         <td>
-                            <strong>{{ lesson.instructor.username }}</strong>
+                            <strong>{{ lesson.instructor.username if lesson.instructor else 'Instructor Unavailable' }}</strong>
                         </td>
-                        <td>{{ lesson.date.strftime('%B %d, %Y') }}</td>
-                        <td>{{ lesson.time.strftime('%I:%M %p') }}</td>
-                        <td>{{ (lesson.duration / 60) }} hour{{ 's' if (lesson.duration / 60) != 1 else '' }}</td>
+                        <td>{{ lesson.date.strftime('%B %d, %Y') if lesson.date else 'TBD' }}</td>
+                        <td>{{ lesson.time.strftime('%I:%M %p') if lesson.time else 'TBD' }}</td>
+                        <td>{{ ((lesson.duration or 0) / 60)|round(1) }} hour{{ 's' if lesson.duration and lesson.duration != 60 else '' }}</td>
                         <td>
-                            <span class="badge bg-success">Confirmed</span>
+                            <span class="badge bg-{{ 'success' if lesson.status == 'confirmed' else 'warning' if lesson.status == 'pending' else 'danger' }}">{{ lesson.status|capitalize }}</span>
                         </td>
                     </tr>
                     {% endfor %}
@@ -120,7 +120,7 @@
                     <a href="{{ url_for('student.profile') }}" class="btn btn-outline-secondary">
                         <i class="fas fa-user-edit me-2"></i>Update Profile
                     </a>
-                    <a href="{{ url_for('chatbot.chatbot') }}" class="btn btn-outline-info">
+                    <a href="{{ url_for('chatbot.chatbot_page') }}" class="btn btn-outline-info">
                         <i class="fas fa-robot me-2"></i>Ask AI Assistant
                     </a>
                 </div>

@@ -210,3 +210,12 @@ footer {
 ::-webkit-scrollbar-thumb:hover {
     background: #5a6fd8;
 }
+
+/* Auth page centering */
+.auth-page {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: calc(100vh - 200px);
+    padding: 2rem 0;
+}
