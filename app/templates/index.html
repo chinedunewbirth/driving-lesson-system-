@@ -1,59 +1,120 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="hero-section bg-primary text-white py-5">
+<!-- Hero Section -->
+<div class="ds-hero rounded-4 mb-5 animate__animated animate__fadeIn">
     <div class="container">
         <div class="row align-items-center">
             <div class="col-lg-6">
-                <h1 class="display-4 fw-bold mb-4">Welcome to DriveSmart</h1>
-                <p class="lead mb-4">Master the roads with confidence. Learn from certified instructors and get your license faster with our comprehensive driving lessons.</p>
-                <div class="d-flex gap-3">
-                    {% if current_user.is_anonymous %}
-                    <a class="btn btn-light btn-lg px-4" href="{{ url_for('auth.register') }}">
-                        <i class="fas fa-user-plus me-2"></i>Start Learning
-                    </a>
-                    <a class="btn btn-outline-light btn-lg px-4" href="{{ url_for('auth.login') }}">
-                        <i class="fas fa-sign-in-alt me-2"></i>Sign In
-                    </a>
-                    {% endif %}
+                <div class="ds-hero-badge">
+                    <i class="fas fa-bolt"></i> The #1 Driving School Platform
                 </div>
+                <h1 class="mb-3">Master the Road<br>with <span style="text-decoration:underline;text-decoration-color:rgba(255,255,255,.4);text-underline-offset:6px">Confidence</span></h1>
+                <p class="lead mb-4">Book certified instructors, track your progress, and get AI-powered driving tips — all in one modern platform.</p>
+                {% if current_user.is_anonymous %}
+                <div class="d-flex gap-3 flex-wrap">
+                    <a class="btn btn-light btn-lg rounded-pill px-4 fw-bold" href="{{ url_for('auth.register') }}">
+                        Get Started Free <i class="fas fa-arrow-right ms-2"></i>
+                    </a>
+                    <a class="btn btn-outline-light btn-lg rounded-pill px-4" href="{{ url_for('auth.login') }}">
+                        Sign In
+                    </a>
+                </div>
+                <div class="mt-3">
+                    <small class="text-white-50"><i class="fas fa-check me-1"></i> No credit card required</small>
+                    <small class="text-white-50 ms-3"><i class="fas fa-check me-1"></i> Free AI assistant</small>
+                </div>
+                {% else %}
+                <a class="btn btn-light btn-lg rounded-pill px-4 fw-bold" href="{{ url_for(current_user.role + '.dashboard') }}">
+                    Go to Dashboard <i class="fas fa-arrow-right ms-2"></i>
+                </a>
+                {% endif %}
             </div>
-            <div class="col-lg-6 text-center">
-                <i class="fas fa-car display-1 text-white-50"></i>
+            <div class="col-lg-6 ds-hero-visual d-none d-lg-flex">
+                <i class="fas fa-car-side"></i>
             </div>
         </div>
     </div>
 </div>
 
-<div class="container py-5">
+<!-- Features Section -->
+<div class="container mb-5">
+    <div class="text-center mb-5">
+        <span class="badge bg-primary bg-opacity-10 text-primary fw-bold px-3 py-2 rounded-pill mb-2">Why DriveSmart?</span>
+        <h2 class="fw-bold">Everything you need to learn driving</h2>
+        <p class="text-muted mx-auto" style="max-width:520px">A complete platform designed to make your journey from learner to licensed driver smooth and enjoyable.</p>
+    </div>
     <div class="row g-4">
         <div class="col-md-4">
-            <div class="card h-100 border-0 shadow-sm">
-                <div class="card-body text-center">
-                    <i class="fas fa-calendar-check fa-3x text-primary mb-3"></i>
-                    <h5 class="card-title">Easy Booking</h5>
-                    <p class="card-text">Book lessons online with our certified instructors at your convenience.</p>
+            <div class="ds-feature-card h-100">
+                <div class="ds-feature-icon ds-stat-icon primary">
+                    <i class="fas fa-calendar-check"></i>
                 </div>
+                <h5>Smart Booking</h5>
+                <p>Schedule lessons online with real-time availability. Pick your instructor, date, and time in seconds.</p>
             </div>
         </div>
         <div class="col-md-4">
-            <div class="card h-100 border-0 shadow-sm">
-                <div class="card-body text-center">
-                    <i class="fas fa-user-graduate fa-3x text-success mb-3"></i>
-                    <h5 class="card-title">Expert Instructors</h5>
-                    <p class="card-text">Learn from experienced driving instructors with years of teaching experience.</p>
+            <div class="ds-feature-card h-100">
+                <div class="ds-feature-icon ds-stat-icon success">
+                    <i class="fas fa-user-graduate"></i>
                 </div>
+                <h5>Expert Instructors</h5>
+                <p>Learn from certified professionals with years of experience and excellent student ratings.</p>
             </div>
         </div>
         <div class="col-md-4">
-            <div class="card h-100 border-0 shadow-sm">
-                <div class="card-body text-center">
-                    <i class="fas fa-robot fa-3x text-info mb-3"></i>
-                    <h5 class="card-title">AI Assistant</h5>
-                    <p class="card-text">Get instant answers to your driving questions with our AI assistant.</p>
+            <div class="ds-feature-card h-100">
+                <div class="ds-feature-icon ds-stat-icon accent">
+                    <i class="fas fa-robot"></i>
                 </div>
+                <h5>AI Driving Coach</h5>
+                <p>Get instant answers to driving questions, study for your theory test, and receive personalised tips.</p>
             </div>
         </div>
     </div>
 </div>
+
+<!-- Stats Bar -->
+<div class="container mb-5">
+    <div class="row g-4 text-center">
+        <div class="col-6 col-md-3">
+            <div class="ds-stat-card">
+                <div class="ds-stat-value text-primary">500+</div>
+                <div class="ds-stat-label">Active Students</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="ds-stat-card">
+                <div class="ds-stat-value text-success">98%</div>
+                <div class="ds-stat-label">Pass Rate</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="ds-stat-card">
+                <div class="ds-stat-value text-warning">50+</div>
+                <div class="ds-stat-label">Instructors</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="ds-stat-card">
+                <div class="ds-stat-value" style="color:var(--ds-accent)">4.9</div>
+                <div class="ds-stat-label"><i class="fas fa-star text-warning"></i> Average Rating</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- CTA Section -->
+{% if current_user.is_anonymous %}
+<div class="container mb-5">
+    <div class="text-center p-5 rounded-4" style="background:var(--ds-gradient-subtle);border:1px solid var(--ds-border)">
+        <h3 class="fw-bold mb-2">Ready to start driving?</h3>
+        <p class="text-muted mb-4">Join thousands of students who chose DriveSmart to get their licence.</p>
+        <a href="{{ url_for('auth.register') }}" class="btn btn-gradient btn-lg rounded-pill px-5">
+            Create Free Account <i class="fas fa-arrow-right ms-2"></i>
+        </a>
+    </div>
+</div>
+{% endif %}
 {% endblock %}

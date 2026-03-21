@@ -3,62 +3,68 @@
 {% block title %}Dashboard - DriveSmart{% endblock %}
 
 {% block content %}
-<div class="row">
-    <div class="col-12">
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <h2 class="mb-0">
-                <i class="fas fa-tachometer-alt me-2 text-primary"></i>
-                Welcome back, {{ current_user.username }}!
-            </h2>
-            <a href="{{ url_for('student.book_lesson') }}" class="btn btn-primary">
-                <i class="fas fa-calendar-plus me-2"></i>Book New Lesson
-            </a>
+<!-- Page Header -->
+<div class="ds-page-header d-flex justify-content-between align-items-center flex-wrap gap-3">
+    <div>
+        <h2 class="mb-1">Welcome back, {{ current_user.username }}! <span class="ds-greeting">👋</span></h2>
+        <p class="text-muted mb-0">Here's an overview of your driving journey</p>
+    </div>
+    <a href="{{ url_for('student.book_lesson') }}" class="btn btn-gradient rounded-pill px-4">
+        <i class="fas fa-calendar-plus me-2"></i>Book New Lesson
+    </a>
+</div>
+
+<!-- Stat Cards -->
+<div class="row g-3 mb-4">
+    <div class="col-6 col-lg-3">
+        <div class="ds-stat-card">
+            <div class="ds-stat-icon success"><i class="fas fa-calendar-check"></i></div>
+            <div class="ds-stat-value">{{ lessons|length }}</div>
+            <div class="ds-stat-label">Upcoming Lessons</div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="ds-stat-card">
+            <div class="ds-stat-icon warning"><i class="fas fa-clock"></i></div>
+            <div class="ds-stat-value">
+                {% set total_hours = 0 %}
+                {% for lesson in lessons %}
+                    {% set total_hours = total_hours + ((lesson.duration or 0) / 60) %}
+                {% endfor %}
+                {{ total_hours|round(1) }}
+            </div>
+            <div class="ds-stat-label">Total Hours</div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="ds-stat-card">
+            <div class="ds-stat-icon info"><i class="fas fa-star"></i></div>
+            <div class="ds-stat-value"><span class="badge bg-success">Active</span></div>
+            <div class="ds-stat-label">Profile Status</div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="ds-stat-card">
+            <div class="ds-stat-icon accent"><i class="fas fa-sterling-sign"></i></div>
+            <div class="ds-stat-value">
+                {% set total_cost = 0 %}
+                {% for lesson in lessons %}
+                    {% if lesson.instructor and lesson.instructor.instructor_profile and lesson.instructor.instructor_profile.hourly_rate %}
+                        {% set total_cost = total_cost + ((lesson.duration or 0) / 60 * lesson.instructor.instructor_profile.hourly_rate) %}
+                    {% endif %}
+                {% endfor %}
+                &pound;{{ '%.0f'|format(total_cost) }}
+            </div>
+            <div class="ds-stat-label">Investment</div>
         </div>
     </div>
 </div>
 
-<div class="row mb-4">
-    <div class="col-md-4">
-        <div class="card border-0 shadow-sm text-center">
-            <div class="card-body">
-                <i class="fas fa-calendar-check fa-3x text-success mb-3"></i>
-                <h5 class="card-title">Upcoming Lessons</h5>
-                <p class="card-text display-4 fw-bold text-success">{{ lessons|length }}</p>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-4">
-        <div class="card border-0 shadow-sm text-center">
-            <div class="card-body">
-                <i class="fas fa-clock fa-3x text-warning mb-3"></i>
-                <h5 class="card-title">Total Hours</h5>
-                <p class="card-text display-4 fw-bold text-warning">
-                    {% set total_hours = 0 %}
-                    {% for lesson in lessons %}
-                        {% set total_hours = total_hours + ((lesson.duration or 0) / 60) %}
-                    {% endfor %}
-                    {{ total_hours|round(1) }}
-                </p>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-4">
-        <div class="card border-0 shadow-sm text-center">
-            <div class="card-body">
-                <i class="fas fa-star fa-3x text-info mb-3"></i>
-                <h5 class="card-title">Profile Status</h5>
-                <p class="card-text">
-                    <span class="badge bg-success fs-6">Active</span>
-                </p>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div class="card border-0 shadow-sm">
-    <div class="card-header bg-light">
-        <h5 class="card-title mb-0">
-            <i class="fas fa-calendar-alt me-2"></i>Your Upcoming Lessons
+<!-- Lessons Table -->
+<div class="card border-0">
+    <div class="card-header">
+        <h5 class="ds-section-title mb-0">
+            <i class="fas fa-calendar-alt"></i>Your Upcoming Lessons
         </h5>
     </div>
     <div class="card-body">
@@ -67,33 +73,68 @@
             <table class="table table-hover mb-0">
                 <thead>
                     <tr>
-                        <th><i class="fas fa-user me-1"></i>Instructor</th>
-                        <th><i class="fas fa-calendar me-1"></i>Date</th>
-                        <th><i class="fas fa-clock me-1"></i>Time</th>
-                        <th><i class="fas fa-hourglass me-1"></i>Duration</th>
-                        <th><i class="fas fa-info-circle me-1"></i>Status</th>
-                        <th><i class="fas fa-credit-card me-1"></i>Payment</th>
+                        <th>Instructor</th>
+                        <th>Date</th>
+                        <th>Time</th>
+                        <th>Duration</th>
+                        <th>Status</th>
+                        <th>Payment</th>
+                        <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for lesson in lessons %}
                     <tr>
                         <td>
-                            <strong>{{ lesson.instructor.username if lesson.instructor else 'Instructor Unavailable' }}</strong>
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="ds-avatar sm">{{ (lesson.instructor.username[0]|upper) if lesson.instructor else '?' }}</div>
+                                <div>
+                                    <strong>{{ lesson.instructor.username if lesson.instructor else 'Unavailable' }}</strong>
+                                    <br><small class="text-muted">{{ lesson.instructor.email if lesson.instructor else '' }}</small>
+                                </div>
+                            </div>
                         </td>
-                        <td>{{ lesson.date.strftime('%B %d, %Y') if lesson.date else 'TBD' }}</td>
-                        <td>{{ lesson.time.strftime('%I:%M %p') if lesson.time else 'TBD' }}</td>
-                        <td>{{ ((lesson.duration or 0) / 60)|round(1) }} hour{{ 's' if lesson.duration and lesson.duration != 60 else '' }}</td>
                         <td>
-                            <span class="badge bg-{{ 'success' if lesson.status == 'confirmed' else 'warning' if lesson.status == 'pending' else 'danger' }}">{{ lesson.status|capitalize }}</span>
+                            <strong>{{ lesson.date.strftime('%b %d, %Y') if lesson.date else 'TBD' }}</strong>
+                            <br><small class="text-muted">{{ lesson.date.strftime('%A') if lesson.date else '' }}</small>
+                        </td>
+                        <td>{{ lesson.time.strftime('%I:%M %p') if lesson.time else 'TBD' }}</td>
+                        <td>{{ ((lesson.duration or 0) / 60)|round(1) }} hr{{ 's' if lesson.duration and lesson.duration != 60 else '' }}</td>
+                        <td>
+                            {% if lesson.status == 'confirmed' %}
+                                <span class="badge bg-success">Confirmed</span>
+                            {% elif lesson.status == 'pending' %}
+                                <span class="badge bg-warning text-dark">Pending</span>
+                            {% elif lesson.status == 'completed' %}
+                                <span class="badge bg-primary">Completed</span>
+                            {% elif lesson.status == 'cancelled' %}
+                                <span class="badge bg-danger">Cancelled</span>
+                            {% else %}
+                                <span class="badge bg-secondary">{{ lesson.status|capitalize }}</span>
+                            {% endif %}
                         </td>
                         <td>
                             {% if lesson.payment and lesson.payment|selectattr('status','equalto','completed')|list %}
                                 <span class="badge bg-success"><i class="fas fa-check me-1"></i>Paid</span>
                             {% else %}
-                                <a href="{{ url_for('student.pay_lesson', lesson_id=lesson.id) }}" class="btn btn-sm btn-outline-success">
-                                    <i class="fas fa-credit-card me-1"></i>Pay
+                                {% set price = 0 %}
+                                {% if lesson.instructor and lesson.instructor.instructor_profile and lesson.instructor.instructor_profile.hourly_rate %}
+                                    {% set price = ((lesson.duration or 0) / 60 * lesson.instructor.instructor_profile.hourly_rate) %}
+                                {% endif %}
+                                <a href="{{ url_for('student.pay_lesson', lesson_id=lesson.id) }}" class="btn btn-sm btn-outline-success rounded-pill">
+                                    <i class="fas fa-credit-card me-1"></i>Pay &pound;{{ '%.0f'|format(price) }}
                                 </a>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if lesson.status == 'confirmed' %}
+                            <button class="btn btn-sm btn-outline-danger rounded-pill" data-bs-toggle="modal"
+                                    data-bs-target="#cancelModal" data-lesson-id="{{ lesson.id }}"
+                                    data-lesson-date="{{ lesson.date.strftime('%b %d, %Y') if lesson.date else 'TBD' }}"
+                                    data-lesson-time="{{ lesson.time.strftime('%I:%M %p') if lesson.time else 'TBD' }}"
+                                    data-lesson-instructor="{{ lesson.instructor.username if lesson.instructor else 'N/A' }}">
+                                <i class="fas fa-times me-1"></i>Cancel
+                            </button>
                             {% endif %}
                         </td>
                     </tr>
@@ -102,11 +143,11 @@
             </table>
         </div>
         {% else %}
-        <div class="text-center py-5">
-            <i class="fas fa-calendar-times fa-4x text-muted mb-3"></i>
-            <h5 class="text-muted">No lessons booked yet</h5>
-            <p class="text-muted">Ready to start your driving journey? Book your first lesson today!</p>
-            <a href="{{ url_for('student.book_lesson') }}" class="btn btn-primary">
+        <div class="ds-empty-state">
+            <i class="fas fa-calendar-times"></i>
+            <h5>No lessons booked yet</h5>
+            <p>Ready to start your driving journey? Book your first lesson today!</p>
+            <a href="{{ url_for('student.book_lesson') }}" class="btn btn-gradient rounded-pill px-4 mt-2">
                 <i class="fas fa-plus me-2"></i>Book Your First Lesson
             </a>
         </div>
@@ -114,55 +155,110 @@
     </div>
 </div>
 
-<div class="row mt-4">
+<!-- Cancel Lesson Modal -->
+<div class="modal fade" id="cancelModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="border-radius: var(--ds-radius-lg); border: none;">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title text-danger"><i class="fas fa-exclamation-triangle me-2"></i>Cancel Lesson</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to cancel this lesson?</p>
+                <div class="p-3 rounded mb-3" style="background: var(--ds-surface-alt);">
+                    <div class="d-flex align-items-center gap-2 mb-2">
+                        <i class="fas fa-user text-primary"></i>
+                        <strong id="cancelInstructor"></strong>
+                    </div>
+                    <div class="d-flex align-items-center gap-2 mb-2">
+                        <i class="fas fa-calendar text-success"></i>
+                        <span id="cancelDate"></span>
+                    </div>
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="fas fa-clock text-info"></i>
+                        <span id="cancelTime"></span>
+                    </div>
+                </div>
+                <div class="alert alert-warning py-2 mb-0">
+                    <small><i class="fas fa-info-circle me-1"></i>This action cannot be undone.</small>
+                </div>
+            </div>
+            <div class="modal-footer border-0 pt-0">
+                <button type="button" class="btn btn-outline-secondary rounded-pill" data-bs-dismiss="modal">Keep Lesson</button>
+                <form id="cancelForm" method="POST">
+                    <button type="submit" class="btn btn-danger rounded-pill px-4">
+                        <i class="fas fa-times me-1"></i>Yes, Cancel Lesson
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.getElementById('cancelModal').addEventListener('show.bs.modal', function(event) {
+    const btn = event.relatedTarget;
+    document.getElementById('cancelInstructor').textContent = btn.dataset.lessonInstructor;
+    document.getElementById('cancelDate').textContent = btn.dataset.lessonDate;
+    document.getElementById('cancelTime').textContent = btn.dataset.lessonTime;
+    document.getElementById('cancelForm').action = '/student/cancel/' + btn.dataset.lessonId;
+});
+</script>
+
+<!-- Quick Actions & Tips -->
+<div class="row g-3 mt-3">
     <div class="col-md-6">
-        <div class="card border-0 shadow-sm">
-            <div class="card-header bg-light">
-                <h6 class="card-title mb-0">
-                    <i class="fas fa-lightbulb me-2"></i>Quick Actions
-                </h6>
+        <div class="card border-0">
+            <div class="card-header">
+                <h6 class="ds-section-title mb-0"><i class="fas fa-bolt"></i>Quick Actions</h6>
             </div>
             <div class="card-body">
-                <div class="d-grid gap-2">
-                    <a href="{{ url_for('student.book_lesson') }}" class="btn btn-outline-primary">
-                        <i class="fas fa-calendar-plus me-2"></i>Book a Lesson
-                    </a>
-                    <a href="{{ url_for('student.profile') }}" class="btn btn-outline-secondary">
-                        <i class="fas fa-user-edit me-2"></i>Update Profile
-                    </a>
-                    <a href="{{ url_for('chatbot.chatbot_page') }}" class="btn btn-outline-info">
-                        <i class="fas fa-robot me-2"></i>Ask AI Assistant
-                    </a>
-                    <a href="{{ url_for('student.payments') }}" class="btn btn-outline-success">
-                        <i class="fas fa-receipt me-2"></i>Payment History
-                    </a>
+                <div class="row g-2">
+                    <div class="col-6">
+                        <a href="{{ url_for('student.book_lesson') }}" class="btn btn-outline-primary w-100">
+                            <i class="fas fa-calendar-plus me-1"></i>Book Lesson
+                        </a>
+                    </div>
+                    <div class="col-6">
+                        <a href="{{ url_for('student.profile') }}" class="btn btn-outline-secondary w-100">
+                            <i class="fas fa-user-edit me-1"></i>Profile
+                        </a>
+                    </div>
+                    <div class="col-6">
+                        <a href="{{ url_for('chatbot.chatbot_page') }}" class="btn btn-outline-info w-100">
+                            <i class="fas fa-robot me-1"></i>AI Assistant
+                        </a>
+                    </div>
+                    <div class="col-6">
+                        <a href="{{ url_for('student.payments') }}" class="btn btn-outline-success w-100">
+                            <i class="fas fa-receipt me-1"></i>Payments
+                        </a>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
     <div class="col-md-6">
-        <div class="card border-0 shadow-sm">
-            <div class="card-header bg-light">
-                <h6 class="card-title mb-0">
-                    <i class="fas fa-info-circle me-2"></i>Driving Tips
-                </h6>
+        <div class="card border-0">
+            <div class="card-header">
+                <h6 class="ds-section-title mb-0"><i class="fas fa-lightbulb"></i>Pro Tips</h6>
             </div>
             <div class="card-body">
                 <ul class="list-unstyled mb-0">
-                    <li class="mb-2">
-                        <i class="fas fa-check-circle text-success me-2"></i>
+                    <li class="mb-2 d-flex align-items-start gap-2">
+                        <span class="badge bg-success bg-opacity-10 text-success p-1"><i class="fas fa-check"></i></span>
                         Always wear your seatbelt
                     </li>
-                    <li class="mb-2">
-                        <i class="fas fa-check-circle text-success me-2"></i>
+                    <li class="mb-2 d-flex align-items-start gap-2">
+                        <span class="badge bg-success bg-opacity-10 text-success p-1"><i class="fas fa-check"></i></span>
                         Check mirrors before changing lanes
                     </li>
-                    <li class="mb-2">
-                        <i class="fas fa-check-circle text-success me-2"></i>
+                    <li class="mb-2 d-flex align-items-start gap-2">
+                        <span class="badge bg-success bg-opacity-10 text-success p-1"><i class="fas fa-check"></i></span>
                         Maintain safe following distance
                     </li>
-                    <li class="mb-0">
-                        <i class="fas fa-check-circle text-success me-2"></i>
+                    <li class="d-flex align-items-start gap-2">
+                        <span class="badge bg-success bg-opacity-10 text-success p-1"><i class="fas fa-check"></i></span>
                         Use turn signals consistently
                     </li>
                 </ul>

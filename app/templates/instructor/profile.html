@@ -3,154 +3,127 @@
 {% block title %}Instructor Profile - DriveSmart{% endblock %}
 
 {% block content %}
-<div class="container-fluid">
-    <div class="row justify-content-center">
-        <div class="col-lg-10">
-            <div class="card border-0 shadow-lg">
-                <div class="card-header bg-info text-white">
-                    <div class="d-flex align-items-center">
-                        <i class="fas fa-user-tie fa-2x me-3"></i>
-                        <div>
-                            <h4 class="card-title mb-0">Instructor Profile</h4>
-                            <small>Build your professional profile to attract more students</small>
-                        </div>
+<div class="row justify-content-center">
+    <div class="col-lg-10">
+        <!-- Profile Card -->
+        <div class="ds-auth-card">
+            <div class="ds-auth-header" style="padding: 1.75rem 1.5rem;">
+                <div class="d-flex align-items-center gap-3 text-start">
+                    <div class="ds-avatar lg">{{ current_user.username[0]|upper }}</div>
+                    <div>
+                        <h4 class="mb-0">Instructor Profile</h4>
+                        <p class="mb-0" style="opacity:.85; font-size:.88rem;">Build your professional profile to attract more students</p>
                     </div>
-                </div>
-                <div class="card-body p-4">
-                    <!-- Profile Overview -->
-                    <div class="row mb-4">
-                        <div class="col-md-6">
-                            <div class="bg-light p-3 rounded">
-                                <h6 class="text-muted mb-1">Name</h6>
-                                <p class="mb-0 fw-bold">{{ current_user.username }}</p>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="bg-light p-3 rounded">
-                                <h6 class="text-muted mb-1">Email</h6>
-                                <p class="mb-0 fw-bold">{{ current_user.email }}</p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <form method="post" id="profile-form">
-                        {{ form.hidden_tag() }}
-
-                        <!-- Bio Section -->
-                        <div class="mb-4">
-                            <label for="bio" class="form-label fw-bold">
-                                <i class="fas fa-user-edit me-2 text-info"></i>About Me
-                            </label>
-                            {{ form.bio(class="form-control", rows=6, placeholder="Tell students about your experience, teaching style, and what makes you a great driving instructor...", id="bio") }}
-                            {% for error in form.bio.errors %}
-                            <div class="text-danger mt-1">
-                                <small><i class="fas fa-exclamation-triangle me-1"></i>{{ error }}</small>
-                            </div>
-                            {% endfor %}
-                            <div class="form-text">
-                                <small class="text-muted">Write a compelling bio that highlights your experience and teaching approach.</small>
-                            </div>
-                            <div class="mt-2">
-                                <small class="text-muted">
-                                    <span id="char-count">0</span>/500 characters
-                                </small>
-                            </div>
-                        </div>
-
-                        <!-- Hourly Rate Section -->
-                        <div class="mb-4">
-                            <label for="hourly_rate" class="form-label fw-bold">
-                                <i class="fas fa-dollar-sign me-2 text-success"></i>Hourly Rate
-                            </label>
-                            <div class="input-group">
-                                <span class="input-group-text">$</span>
-                                {{ form.hourly_rate(class="form-control form-control-lg", placeholder="50", min="20", max="200", id="hourly_rate") }}
-                                <span class="input-group-text">per hour</span>
-                            </div>
-                            {% for error in form.hourly_rate.errors %}
-                            <div class="text-danger mt-1">
-                                <small><i class="fas fa-exclamation-triangle me-1"></i>{{ error }}</small>
-                            </div>
-                            {% endfor %}
-                            <div class="form-text">
-                                <small class="text-muted">Set a competitive rate based on your experience and local market.</small>
-                            </div>
-                        </div>
-
-                        <!-- Rate Preview -->
-                        <div class="rate-preview bg-light p-3 rounded mb-4" id="rate-preview">
-                            <h6 class="text-primary mb-2">
-                                <i class="fas fa-calculator me-2"></i>Earnings Preview
-                            </h6>
-                            <div class="row text-center">
-                                <div class="col-4">
-                                    <div class="p-2">
-                                        <small class="text-muted d-block">1 Hour</small>
-                                        <span class="fw-bold text-success" id="rate-1hr">$0</span>
-                                    </div>
-                                </div>
-                                <div class="col-4">
-                                    <div class="p-2">
-                                        <small class="text-muted d-block">5 Hours</small>
-                                        <span class="fw-bold text-success" id="rate-5hr">$0</span>
-                                    </div>
-                                </div>
-                                <div class="col-4">
-                                    <div class="p-2">
-                                        <small class="text-muted d-block">10 Hours</small>
-                                        <span class="fw-bold text-success" id="rate-10hr">$0</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Tips Section -->
-                        <div class="alert alert-info">
-                            <h6 class="alert-heading">
-                                <i class="fas fa-lightbulb me-2"></i>Tips for a Great Profile
-                            </h6>
-                            <ul class="mb-0 small">
-                                <li>Highlight your years of experience and certifications</li>
-                                <li>Mention your teaching style and approach to student safety</li>
-                                <li>Include any specializations (defensive driving, teen instruction, etc.)</li>
-                                <li>Set competitive rates that reflect your expertise</li>
-                            </ul>
-                        </div>
-
-                        <!-- Action Buttons -->
-                        <div class="d-flex justify-content-between mt-4">
-                            <a href="{{ url_for('instructor.dashboard') }}" class="btn btn-outline-secondary btn-lg">
-                                <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
-                            </a>
-                            <button type="submit" class="btn btn-info btn-lg px-4" id="save-btn">
-                                <i class="fas fa-save me-2"></i>Save Profile
-                            </button>
-                        </div>
-                    </form>
                 </div>
             </div>
-
-            <!-- Profile Completion Status -->
-            <div class="row mt-4">
-                <div class="col-md-6">
-                    <div class="card border-0 shadow-sm">
-                        <div class="card-body text-center">
-                            <div class="progress-circle mx-auto mb-3" style="width: 80px; height: 80px;">
-                                <i class="fas fa-check-circle fa-3x text-success"></i>
-                            </div>
-                            <h6 class="card-title">Profile Status</h6>
-                            <span class="badge bg-success fs-6">Complete</span>
+            <div class="ds-auth-body">
+                <!-- Profile Overview -->
+                <div class="row g-3 mb-4">
+                    <div class="col-md-6">
+                        <div class="p-3 rounded" style="background: var(--ds-surface-alt)">
+                            <small class="text-muted d-block mb-1">Name</small>
+                            <span class="fw-bold">{{ current_user.username }}</span>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="p-3 rounded" style="background: var(--ds-surface-alt)">
+                            <small class="text-muted d-block mb-1">Email</small>
+                            <span class="fw-bold">{{ current_user.email }}</span>
                         </div>
                     </div>
                 </div>
-                <div class="col-md-6">
-                    <div class="card border-0 shadow-sm">
-                        <div class="card-body text-center">
-                            <i class="fas fa-users fa-3x text-primary mb-3"></i>
-                            <h6 class="card-title">Students Taught</h6>
-                            <p class="mb-0 display-6 fw-bold text-primary">{{ lessons|length }}</p>
+
+                <form method="post" id="profile-form">
+                    {{ form.hidden_tag() }}
+
+                    <!-- Bio -->
+                    <div class="mb-4">
+                        <label for="bio" class="form-label">
+                            <i class="fas fa-user-edit me-1" style="color: var(--ds-primary)"></i>About Me
+                        </label>
+                        {{ form.bio(class="form-control", rows=5, placeholder="Tell students about your experience, teaching style, and what makes you a great driving instructor...", id="bio") }}
+                        {% for error in form.bio.errors %}
+                        <small class="text-danger"><i class="fas fa-exclamation-triangle me-1"></i>{{ error }}</small>
+                        {% endfor %}
+                        <div class="d-flex justify-content-between mt-1">
+                            <small class="text-muted">Write a compelling bio that highlights your experience.</small>
+                            <small class="text-muted"><span id="char-count">0</span>/500</small>
                         </div>
                     </div>
+
+                    <!-- Hourly Rate -->
+                    <div class="mb-4">
+                        <label for="hourly_rate" class="form-label">
+                            <i class="fas fa-sterling-sign me-1" style="color: var(--ds-success)"></i>Hourly Rate
+                        </label>
+                        <div class="input-group">
+                            <span class="input-group-text">&pound;</span>
+                            {{ form.hourly_rate(class="form-control form-control-lg", placeholder="40", min="15", max="200", id="hourly_rate") }}
+                            <span class="input-group-text">per hour</span>
+                        </div>
+                        {% for error in form.hourly_rate.errors %}
+                        <small class="text-danger"><i class="fas fa-exclamation-triangle me-1"></i>{{ error }}</small>
+                        {% endfor %}
+                        <small class="text-muted d-block mt-1">Set a competitive rate based on your experience.</small>
+                    </div>
+
+                    <!-- Earnings Preview -->
+                    <div class="row g-3 mb-4 p-3 rounded" style="background: var(--ds-gradient-subtle)">
+                        <div class="col-12 mb-1">
+                            <h6 class="ds-section-title"><i class="fas fa-calculator"></i>Earnings Preview</h6>
+                        </div>
+                        <div class="col-4 text-center">
+                            <small class="text-muted d-block">1 Hour</small>
+                            <span class="fw-bold" style="color: var(--ds-success)" id="rate-1hr">&pound;0</span>
+                        </div>
+                        <div class="col-4 text-center">
+                            <small class="text-muted d-block">5 Hours</small>
+                            <span class="fw-bold" style="color: var(--ds-success)" id="rate-5hr">&pound;0</span>
+                        </div>
+                        <div class="col-4 text-center">
+                            <small class="text-muted d-block">10 Hours</small>
+                            <span class="fw-bold" style="color: var(--ds-success)" id="rate-10hr">&pound;0</span>
+                        </div>
+                    </div>
+
+                    <!-- Tips -->
+                    <div class="alert alert-info border-0" style="background: #eff6ff; border-left: 4px solid var(--ds-info) !important;">
+                        <h6 class="mb-2"><i class="fas fa-lightbulb me-2"></i>Tips for a Great Profile</h6>
+                        <ul class="mb-0 small">
+                            <li>Highlight your years of experience and certifications</li>
+                            <li>Mention your teaching style and approach to student safety</li>
+                            <li>Include any specialisations (defensive driving, teen instruction, etc.)</li>
+                            <li>Set competitive rates that reflect your expertise</li>
+                        </ul>
+                    </div>
+
+                    <!-- Actions -->
+                    <div class="d-flex justify-content-between mt-4">
+                        <a href="{{ url_for('instructor.dashboard') }}" class="btn btn-outline-secondary btn-lg rounded-pill px-4">
+                            <i class="fas fa-arrow-left me-2"></i>Back
+                        </a>
+                        <button type="submit" class="btn btn-gradient btn-lg rounded-pill px-4" id="save-btn">
+                            <i class="fas fa-save me-2"></i>Save Profile
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Status Cards -->
+        <div class="row g-3 mt-4">
+            <div class="col-md-6">
+                <div class="ds-stat-card">
+                    <div class="ds-stat-icon success"><i class="fas fa-check-circle"></i></div>
+                    <div class="ds-stat-value"><span class="badge bg-success">Complete</span></div>
+                    <div class="ds-stat-label">Profile Status</div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="ds-stat-card">
+                    <div class="ds-stat-icon primary"><i class="fas fa-users"></i></div>
+                    <div class="ds-stat-value">{{ lessons|length }}</div>
+                    <div class="ds-stat-label">Students Taught</div>
                 </div>
             </div>
         </div>
@@ -167,37 +140,28 @@ document.addEventListener('DOMContentLoaded', function() {
     const rate10hr = document.getElementById('rate-10hr');
     const saveBtn = document.getElementById('save-btn');
 
-    // Character count for bio
     function updateCharCount() {
         const count = bioTextarea.value.length;
         charCount.textContent = count;
         charCount.className = count > 450 ? 'text-warning' : count > 500 ? 'text-danger' : '';
     }
-
     bioTextarea.addEventListener('input', updateCharCount);
-    updateCharCount(); // Initial count
+    updateCharCount();
 
-    // Rate preview calculation
     function updateRatePreview() {
         const rate = parseFloat(hourlyRate.value) || 0;
-        rate1hr.textContent = '$' + rate;
-        rate5hr.textContent = '$' + (rate * 5);
-        rate10hr.textContent = '$' + (rate * 10);
+        rate1hr.textContent = '\u00A3' + rate;
+        rate5hr.textContent = '\u00A3' + (rate * 5);
+        rate10hr.textContent = '\u00A3' + (rate * 10);
     }
-
     hourlyRate.addEventListener('input', updateRatePreview);
-    updateRatePreview(); // Initial calculation
+    updateRatePreview();
 
-    // Form submission
     document.getElementById('profile-form').addEventListener('submit', function(e) {
         const originalText = saveBtn.innerHTML;
         saveBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Saving...';
         saveBtn.disabled = true;
-
-        setTimeout(() => {
-            saveBtn.innerHTML = originalText;
-            saveBtn.disabled = false;
-        }, 2000);
+        setTimeout(() => { saveBtn.innerHTML = originalText; saveBtn.disabled = false; }, 2000);
     });
 });
 </script>

@@ -25,6 +25,37 @@ def dashboard():
     ).order_by(Lesson.date).all()
     return render_template('student/dashboard.html', lessons=lessons)
 
+@bp.route('/student/cancel/<int:lesson_id>', methods=['POST'])
+@login_required
+def cancel_lesson(lesson_id):
+    """Cancel an upcoming lesson"""
+    if not current_user.is_student():
+        flash('Access denied.')
+        return redirect(url_for('main.index'))
+
+    lesson = Lesson.query.get_or_404(lesson_id)
+
+    # Verify ownership
+    if lesson.student_id != current_user.id:
+        flash('Access denied.', 'danger')
+        return redirect(url_for('student.dashboard'))
+
+    # Only confirmed/upcoming lessons can be cancelled
+    if lesson.status != 'confirmed':
+        flash('This lesson cannot be cancelled.', 'warning')
+        return redirect(url_for('student.dashboard'))
+
+    from datetime import datetime
+    if lesson.date and lesson.date < datetime.now().date():
+        flash('Past lessons cannot be cancelled.', 'warning')
+        return redirect(url_for('student.dashboard'))
+
+    lesson.status = 'cancelled'
+    db.session.commit()
+    flash('Lesson cancelled successfully.', 'success')
+    return redirect(url_for('student.dashboard'))
+
+
 @bp.route('/student/book', methods=['GET', 'POST'])
 @login_required
 def book_lesson():

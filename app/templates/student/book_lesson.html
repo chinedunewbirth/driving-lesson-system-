@@ -3,183 +3,132 @@
 {% block title %}Book a Lesson - DriveSmart{% endblock %}
 
 {% block content %}
-<div class="container-fluid">
-    <div class="row justify-content-center">
-        <div class="col-lg-10">
-            <div class="card border-0 shadow-lg">
-                <div class="card-header bg-success text-white">
-                    <div class="d-flex align-items-center">
-                        <i class="fas fa-calendar-plus fa-2x me-3"></i>
-                        <div>
-                            <h4 class="card-title mb-0">Book Your Driving Lesson</h4>
-                            <small>Choose an instructor and schedule your lesson</small>
+<!-- Page Header -->
+<div class="ds-page-header d-flex justify-content-between align-items-center flex-wrap gap-3">
+    <div>
+        <h2 class="mb-1">Book Your Driving Lesson</h2>
+        <p class="text-muted mb-0">Choose an instructor and schedule your lesson</p>
+    </div>
+    <a href="{{ url_for('student.dashboard') }}" class="btn btn-outline-secondary rounded-pill px-3">
+        <i class="fas fa-arrow-left me-1"></i>Dashboard
+    </a>
+</div>
+
+<form method="post" novalidate id="booking-form">
+    {{ form.hidden_tag() }}
+
+    <!-- Step 1: Choose Instructor -->
+    <div class="card border-0 mb-4">
+        <div class="card-header bg-transparent">
+            <h5 class="ds-section-title mb-0">
+                <span class="badge rounded-pill bg-primary me-2">1</span>Choose Your Instructor
+            </h5>
+        </div>
+        <div class="card-body">
+            <div class="row g-3">
+                {% for instructor in instructors %}
+                <div class="col-md-6 col-lg-4">
+                    <div class="card h-100 border instructor-card" data-instructor-id="{{ instructor.id }}"
+                         style="cursor:pointer; transition: all 0.3s ease; border-radius: var(--ds-radius);">
+                        <div class="card-body text-center p-4">
+                            <div class="ds-avatar lg mx-auto mb-3">{{ instructor.username[0]|upper }}</div>
+                            <h6 class="mb-1">{{ instructor.username }}</h6>
+                            {% if instructor.instructor_profile %}
+                            <p class="small text-muted mb-2">
+                                {{ instructor.instructor_profile.bio|truncate(50) if instructor.instructor_profile.bio else "Experienced driving instructor" }}
+                            </p>
+                            <span class="badge rounded-pill" style="background: var(--ds-gradient-subtle); color: var(--ds-primary);">
+                                <i class="fas fa-pound-sign me-1"></i>£{{ instructor.instructor_profile.hourly_rate }}/hour
+                            </span>
+                            {% endif %}
+                            <div class="form-check mt-3 d-flex justify-content-center">
+                                <input class="form-check-input instructor-radio" type="radio" name="instructor_id"
+                                       value="{{ instructor.id }}" id="instructor{{ instructor.id }}">
+                                <label class="form-check-label ms-2" for="instructor{{ instructor.id }}">Select</label>
+                            </div>
                         </div>
                     </div>
                 </div>
-                <div class="card-body p-4">
-                    <form method="post" novalidate id="booking-form">
-                        {{ form.hidden_tag() }}
+                {% endfor %}
+            </div>
+            {% for error in form.instructor_id.errors %}
+            <div class="text-danger mt-2"><small><i class="fas fa-exclamation-triangle me-1"></i>{{ error }}</small></div>
+            {% endfor %}
+        </div>
+    </div>
 
-                        <!-- Step 1: Choose Instructor -->
-                        <div class="booking-step mb-5">
-                            <h5 class="text-primary mb-3">
-                                <i class="fas fa-user-graduate me-2"></i>Step 1: Choose Your Instructor
-                            </h5>
-                            <div class="row">
-                                {% for instructor in instructors %}
-                                <div class="col-md-6 col-lg-4 mb-3">
-                                    <div class="instructor-card card h-100 border-0 shadow-sm" data-instructor-id="{{ instructor.id }}">
-                                        <div class="card-body text-center">
-                                            <div class="avatar-circle mx-auto mb-3">
-                                                <i class="fas fa-user-tie fa-2x text-primary"></i>
-                                            </div>
-                                            <h6 class="card-title">{{ instructor.username }}</h6>
-                                            {% if instructor.instructor_profile %}
-                                            <p class="card-text small text-muted mb-2">
-                                                {{ instructor.instructor_profile.bio|truncate(50) if instructor.instructor_profile.bio else "Experienced driving instructor" }}
-                                            </p>
-                                            <div class="rate-display mb-3">
-                                                <span class="badge bg-success">
-                                                    <i class="fas fa-dollar-sign me-1"></i>${{ instructor.instructor_profile.hourly_rate }}/hour
-                                                </span>
-                                            </div>
-                                            {% endif %}
-                                            <div class="form-check">
-                                                <input class="form-check-input instructor-radio" type="radio" name="instructor_id" value="{{ instructor.id }}" id="instructor{{ instructor.id }}">
-                                                <label class="form-check-label" for="instructor{{ instructor.id }}">
-                                                    Select This Instructor
-                                                </label>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                                {% endfor %}
-                            </div>
-                            {% for error in form.instructor_id.errors %}
-                            <div class="text-danger mt-2">
-                                <small><i class="fas fa-exclamation-triangle me-1"></i>{{ error }}</small>
-                            </div>
-                            {% endfor %}
-                        </div>
-
-                        <!-- Step 2: Schedule Lesson -->
-                        <div class="booking-step mb-5">
-                            <h5 class="text-primary mb-3">
-                                <i class="fas fa-clock me-2"></i>Step 2: Schedule Your Lesson
-                            </h5>
-                            <div class="row">
-                                <div class="col-md-4 mb-3">
-                                    <label for="date" class="form-label fw-bold">
-                                        <i class="fas fa-calendar me-2 text-success"></i>Date
-                                    </label>
-                                    {{ form.date(class="form-control form-control-lg", type="date", id="date", min=today) }}
-                                    {% for error in form.date.errors %}
-                                    <div class="text-danger mt-1">
-                                        <small><i class="fas fa-exclamation-triangle me-1"></i>{{ error }}</small>
-                                    </div>
-                                    {% endfor %}
-                                </div>
-                                <div class="col-md-4 mb-3">
-                                    <label for="time" class="form-label fw-bold">
-                                        <i class="fas fa-clock me-2 text-info"></i>Time
-                                    </label>
-                                    {{ form.time(class="form-control form-control-lg", type="time", id="time") }}
-                                    {% for error in form.time.errors %}
-                                    <div class="text-danger mt-1">
-                                        <small><i class="fas fa-exclamation-triangle me-1"></i>{{ error }}</small>
-                                    </div>
-                                    {% endfor %}
-                                </div>
-                                <div class="col-md-4 mb-3">
-                                    <label for="duration" class="form-label fw-bold">
-                                        <i class="fas fa-hourglass me-2 text-warning"></i>Duration
-                                    </label>
-                                    <div class="input-group">
-                                        {{ form.duration(class="form-control form-control-lg", id="duration", min="1", max="8") }}
-                                        <span class="input-group-text">hours</span>
-                                    </div>
-                                    {% for error in form.duration.errors %}
-                                    <div class="text-danger mt-1">
-                                        <small><i class="fas fa-exclamation-triangle me-1"></i>{{ error }}</small>
-                                    </div>
-                                    {% endfor %}
-                                    <div class="form-text">
-                                        <small class="text-muted">Typical lesson duration: 1-2 hours</small>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Booking Summary -->
-                        <div class="booking-summary bg-light p-4 rounded mb-4" id="booking-summary" style="display: none;">
-                            <h6 class="text-primary mb-3">
-                                <i class="fas fa-receipt me-2"></i>Booking Summary
-                            </h6>
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <p class="mb-1"><strong>Instructor:</strong> <span id="summary-instructor">Not selected</span></p>
-                                    <p class="mb-1"><strong>Date:</strong> <span id="summary-date">Not selected</span></p>
-                                </div>
-                                <div class="col-md-6">
-                                    <p class="mb-1"><strong>Time:</strong> <span id="summary-time">Not selected</span></p>
-                                    <p class="mb-1"><strong>Duration:</strong> <span id="summary-duration">Not selected</span></p>
-                                    <p class="mb-1"><strong>Estimated Cost:</strong> <span id="summary-cost" class="text-success fw-bold">$0</span></p>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Action Buttons -->
-                        <div class="d-flex justify-content-between">
-                            <a href="{{ url_for('student.dashboard') }}" class="btn btn-outline-secondary btn-lg">
-                                <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
-                            </a>
-                            <button type="submit" class="btn btn-success btn-lg px-5" id="book-btn">
-                                <i class="fas fa-calendar-check me-2"></i>Book Lesson
-                            </button>
-                        </div>
-                    </form>
+    <!-- Step 2: Schedule Lesson -->
+    <div class="card border-0 mb-4">
+        <div class="card-header bg-transparent">
+            <h5 class="ds-section-title mb-0">
+                <span class="badge rounded-pill bg-primary me-2">2</span>Schedule Your Lesson
+            </h5>
+        </div>
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <label for="date" class="form-label fw-semibold">
+                        <i class="fas fa-calendar me-1 text-success"></i>Date
+                    </label>
+                    {{ form.date(class="form-control", type="date", id="date", min=today) }}
+                    {% for error in form.date.errors %}
+                    <div class="text-danger mt-1"><small><i class="fas fa-exclamation-triangle me-1"></i>{{ error }}</small></div>
+                    {% endfor %}
+                </div>
+                <div class="col-md-4">
+                    <label for="time" class="form-label fw-semibold">
+                        <i class="fas fa-clock me-1 text-info"></i>Time
+                    </label>
+                    {{ form.time(class="form-control", type="time", id="time") }}
+                    {% for error in form.time.errors %}
+                    <div class="text-danger mt-1"><small><i class="fas fa-exclamation-triangle me-1"></i>{{ error }}</small></div>
+                    {% endfor %}
+                </div>
+                <div class="col-md-4">
+                    <label for="duration" class="form-label fw-semibold">
+                        <i class="fas fa-hourglass me-1 text-warning"></i>Duration
+                    </label>
+                    <div class="input-group">
+                        {{ form.duration(class="form-control", id="duration", min="1", max="8") }}
+                        <span class="input-group-text">hours</span>
+                    </div>
+                    {% for error in form.duration.errors %}
+                    <div class="text-danger mt-1"><small><i class="fas fa-exclamation-triangle me-1"></i>{{ error }}</small></div>
+                    {% endfor %}
+                    <small class="text-muted">Typical: 1-2 hours</small>
                 </div>
             </div>
         </div>
     </div>
-</div>
 
-<style>
-.instructor-card {
-    transition: all 0.3s ease;
-    cursor: pointer;
-}
+    <!-- Booking Summary -->
+    <div class="card border-0 mb-4" id="booking-summary" style="display: none;">
+        <div class="card-body p-4" style="background: var(--ds-gradient-subtle); border-radius: var(--ds-radius);">
+            <h6 class="ds-section-title"><i class="fas fa-receipt"></i>Booking Summary</h6>
+            <div class="row">
+                <div class="col-md-6">
+                    <p class="mb-1"><strong>Instructor:</strong> <span id="summary-instructor">Not selected</span></p>
+                    <p class="mb-1"><strong>Date:</strong> <span id="summary-date">Not selected</span></p>
+                </div>
+                <div class="col-md-6">
+                    <p class="mb-1"><strong>Time:</strong> <span id="summary-time">Not selected</span></p>
+                    <p class="mb-1"><strong>Duration:</strong> <span id="summary-duration">Not selected</span></p>
+                    <p class="mb-0"><strong>Estimated Cost:</strong> <span id="summary-cost" class="fw-bold" style="color: var(--ds-success);">£0</span></p>
+                </div>
+            </div>
+        </div>
+    </div>
 
-.instructor-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 8px 25px rgba(0,0,0,0.15) !important;
-}
-
-.instructor-card.selected {
-    border: 3px solid #0d6efd !important;
-    background-color: #f8f9ff;
-}
-
-.avatar-circle {
-    width: 60px;
-    height: 60px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: white;
-}
-
-.booking-step {
-    border-left: 4px solid #e9ecef;
-    padding-left: 20px;
-}
-
-.booking-step.active {
-    border-left-color: #0d6efd;
-}
-</style>
+    <!-- Action Buttons -->
+    <div class="d-flex justify-content-between">
+        <a href="{{ url_for('student.dashboard') }}" class="btn btn-outline-secondary rounded-pill px-4">
+            <i class="fas fa-arrow-left me-1"></i>Back
+        </a>
+        <button type="submit" class="btn btn-gradient rounded-pill px-5" id="book-btn">
+            <i class="fas fa-calendar-check me-2"></i>Book Lesson
+        </button>
+    </div>
+</form>
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
@@ -189,37 +138,31 @@ document.addEventListener('DOMContentLoaded', function() {
     const instructorCards = document.querySelectorAll('.instructor-card');
 
     let selectedInstructor = null;
-    let instructorRate = 0;
 
-    // Instructor selection
     instructorCards.forEach(card => {
         card.addEventListener('click', function() {
-            // Remove selected class from all cards
-            instructorCards.forEach(c => c.classList.remove('selected'));
+            instructorCards.forEach(c => {
+                c.style.borderColor = '';
+                c.style.background = '';
+            });
+            this.style.borderColor = 'var(--ds-primary)';
+            this.style.borderWidth = '2px';
+            this.style.background = 'var(--ds-gradient-subtle)';
 
-            // Add selected class to clicked card
-            this.classList.add('selected');
-
-            // Get instructor data
-            const instructorId = this.dataset.instructorId;
             const radio = this.querySelector('.instructor-radio');
-            const rateElement = this.querySelector('.badge');
-            const rateText = rateElement ? rateElement.textContent : '$50/hour';
+            const rateEl = this.querySelector('.badge');
+            const rateText = rateEl ? rateEl.textContent : '\u00A30/hour';
 
             selectedInstructor = {
-                id: instructorId,
-                name: this.querySelector('.card-title').textContent,
-                rate: parseFloat(rateText.replace('$', '').replace('/hour', ''))
+                id: this.dataset.instructorId,
+                name: this.querySelector('h6').textContent,
+                rate: parseFloat(rateText.replace(/[^\d.]/g, ''))
             };
-
-            // Check the radio button
             radio.checked = true;
-
             updateSummary();
         });
     });
 
-    // Form inputs change
     document.getElementById('date').addEventListener('change', updateSummary);
     document.getElementById('time').addEventListener('change', updateSummary);
     document.getElementById('duration').addEventListener('change', updateSummary);
@@ -231,29 +174,21 @@ document.addEventListener('DOMContentLoaded', function() {
 
         if (selectedInstructor && date && time && duration) {
             summary.style.display = 'block';
-
             document.getElementById('summary-instructor').textContent = selectedInstructor.name;
             document.getElementById('summary-date').textContent = new Date(date).toLocaleDateString();
             document.getElementById('summary-time').textContent = time;
             document.getElementById('summary-duration').textContent = duration + ' hour' + (duration != 1 ? 's' : '');
-            document.getElementById('summary-cost').textContent = '$' + (selectedInstructor.rate * duration);
+            document.getElementById('summary-cost').textContent = '\u00A3' + (selectedInstructor.rate * duration).toFixed(2);
         }
     }
 
-    // Form submission
-    form.addEventListener('submit', function(e) {
-        const originalText = bookBtn.innerHTML;
+    form.addEventListener('submit', function() {
+        const orig = bookBtn.innerHTML;
         bookBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Booking...';
         bookBtn.disabled = true;
-
-        // Re-enable after delay (server will handle the actual submission)
-        setTimeout(() => {
-            bookBtn.innerHTML = originalText;
-            bookBtn.disabled = false;
-        }, 3000);
+        setTimeout(() => { bookBtn.innerHTML = orig; bookBtn.disabled = false; }, 3000);
     });
 
-    // Set minimum date to today
     const today = new Date().toISOString().split('T')[0];
     document.getElementById('date').setAttribute('min', today);
 });

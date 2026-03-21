@@ -3,98 +3,82 @@
 {% block title %}My Profile - DriveSmart{% endblock %}
 
 {% block content %}
-<div class="container-fluid">
-    <div class="row justify-content-center">
-        <div class="col-lg-8">
-            <div class="card border-0 shadow-lg">
-                <div class="card-header bg-primary text-white">
-                    <div class="d-flex align-items-center">
-                        <i class="fas fa-user-circle fa-2x me-3"></i>
-                        <div>
-                            <h4 class="card-title mb-0">My Profile</h4>
-                            <small>Manage your personal information</small>
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <!-- Profile Card -->
+        <div class="ds-auth-card">
+            <div class="ds-auth-header">
+                <div class="ds-avatar lg mx-auto mb-3">{{ current_user.username[0]|upper }}</div>
+                <h4 class="mb-1">{{ current_user.username }}</h4>
+                <p class="opacity-75 mb-0">{{ current_user.email }}</p>
+            </div>
+            <div class="ds-auth-body">
+                <!-- Profile Info -->
+                <div class="row g-3 mb-4">
+                    <div class="col-md-6">
+                        <div class="p-3 rounded" style="background: var(--ds-surface-alt);">
+                            <small class="text-muted d-block mb-1">Username</small>
+                            <strong>{{ current_user.username }}</strong>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="p-3 rounded" style="background: var(--ds-surface-alt);">
+                            <small class="text-muted d-block mb-1">Email</small>
+                            <strong>{{ current_user.email }}</strong>
                         </div>
                     </div>
                 </div>
-                <div class="card-body p-4">
-                    <!-- Profile Summary -->
-                    <div class="row mb-4">
-                        <div class="col-md-6">
-                            <div class="bg-light p-3 rounded">
-                                <h6 class="text-muted mb-1">Username</h6>
-                                <p class="mb-0 fw-bold">{{ current_user.username }}</p>
-                            </div>
+
+                <!-- Profile Form -->
+                <form method="post" id="profile-form">
+                    {{ form.hidden_tag() }}
+                    <div class="mb-4">
+                        <label for="phone" class="form-label fw-semibold">
+                            <i class="fas fa-phone me-1 text-primary"></i>Phone Number
+                        </label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="fas fa-phone"></i></span>
+                            {{ form.phone(class="form-control", placeholder="Enter your phone number", id="phone") }}
                         </div>
-                        <div class="col-md-6">
-                            <div class="bg-light p-3 rounded">
-                                <h6 class="text-muted mb-1">Email</h6>
-                                <p class="mb-0 fw-bold">{{ current_user.email }}</p>
-                            </div>
-                        </div>
+                        {% for error in form.phone.errors %}
+                        <div class="text-danger mt-1"><small><i class="fas fa-exclamation-triangle me-1"></i>{{ error }}</small></div>
+                        {% endfor %}
+                        <small class="text-muted">We'll use this to contact you about your lessons.</small>
                     </div>
 
-                    <!-- Profile Form -->
-                    <form method="post" id="profile-form">
-                        {{ form.hidden_tag() }}
+                    <div class="d-flex gap-3">
+                        <button type="submit" class="btn btn-gradient rounded-pill px-4" id="save-btn">
+                            <i class="fas fa-save me-2"></i>Save Changes
+                        </button>
+                        <a href="{{ url_for('student.dashboard') }}" class="btn btn-outline-secondary rounded-pill px-4">
+                            <i class="fas fa-arrow-left me-1"></i>Dashboard
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
 
-                        <div class="mb-4">
-                            <label for="phone" class="form-label fw-bold">
-                                <i class="fas fa-phone me-2 text-primary"></i>Phone Number
-                            </label>
-                            <div class="input-group">
-                                <span class="input-group-text"><i class="fas fa-phone"></i></span>
-                                {{ form.phone(class="form-control form-control-lg", placeholder="Enter your phone number", id="phone") }}
-                            </div>
-                            {% for error in form.phone.errors %}
-                            <div class="text-danger mt-1">
-                                <small><i class="fas fa-exclamation-triangle me-1"></i>{{ error }}</small>
-                            </div>
-                            {% endfor %}
-                            <div class="form-text">
-                                <small class="text-muted">We'll use this to contact you about your lessons.</small>
-                            </div>
-                        </div>
-
-                        <div class="d-flex gap-3">
-                            <button type="submit" class="btn btn-primary btn-lg px-4" id="save-btn">
-                                <i class="fas fa-save me-2"></i>Save Changes
-                            </button>
-                            <a href="{{ url_for('student.dashboard') }}" class="btn btn-outline-secondary btn-lg px-4">
-                                <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
-                            </a>
-                        </div>
-                    </form>
+        <!-- Quick Stats -->
+        <div class="row g-3 mt-3">
+            <div class="col-md-4">
+                <div class="ds-stat-card text-center">
+                    <div class="ds-stat-icon success mx-auto mb-2"><i class="fas fa-calendar-check"></i></div>
+                    <div class="ds-stat-label">Profile Status</div>
+                    <span class="badge rounded-pill bg-success mt-1">Complete</span>
                 </div>
             </div>
-
-            <!-- Quick Stats -->
-            <div class="row mt-4">
-                <div class="col-md-4">
-                    <div class="card border-0 shadow-sm text-center">
-                        <div class="card-body">
-                            <i class="fas fa-calendar-check fa-2x text-success mb-2"></i>
-                            <h6 class="card-title">Profile Status</h6>
-                            <span class="badge bg-success fs-6">Complete</span>
-                        </div>
-                    </div>
+            <div class="col-md-4">
+                <div class="ds-stat-card text-center">
+                    <div class="ds-stat-icon info mx-auto mb-2"><i class="fas fa-shield-alt"></i></div>
+                    <div class="ds-stat-label">Account Security</div>
+                    <span class="badge rounded-pill bg-info mt-1">Active</span>
                 </div>
-                <div class="col-md-4">
-                    <div class="card border-0 shadow-sm text-center">
-                        <div class="card-body">
-                            <i class="fas fa-shield-alt fa-2x text-info mb-2"></i>
-                            <h6 class="card-title">Account Security</h6>
-                            <span class="badge bg-info fs-6">Active</span>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="card border-0 shadow-sm text-center">
-                        <div class="card-body">
-                            <i class="fas fa-star fa-2x text-warning mb-2"></i>
-                            <h6 class="card-title">Member Since</h6>
-                            <small class="text-muted">{{ current_user.id }} days</small>
-                        </div>
-                    </div>
+            </div>
+            <div class="col-md-4">
+                <div class="ds-stat-card text-center">
+                    <div class="ds-stat-icon warning mx-auto mb-2"><i class="fas fa-star"></i></div>
+                    <div class="ds-stat-label">Member Since</div>
+                    <small class="text-muted">{{ current_user.id }} days</small>
                 </div>
             </div>
         </div>
@@ -102,20 +86,12 @@
 </div>
 
 <script>
-// Form submission with loading state
-document.getElementById('profile-form').addEventListener('submit', function(e) {
-    const saveBtn = document.getElementById('save-btn');
-    const originalText = saveBtn.innerHTML;
-
-    // Show loading state
-    saveBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Saving...';
-    saveBtn.disabled = true;
-
-    // Re-enable after a short delay (in case of client-side validation)
-    setTimeout(() => {
-        saveBtn.innerHTML = originalText;
-        saveBtn.disabled = false;
-    }, 2000);
+document.getElementById('profile-form').addEventListener('submit', function() {
+    const btn = document.getElementById('save-btn');
+    const orig = btn.innerHTML;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Saving...';
+    btn.disabled = true;
+    setTimeout(() => { btn.innerHTML = orig; btn.disabled = false; }, 2000);
 });
 </script>
 {% endblock %}

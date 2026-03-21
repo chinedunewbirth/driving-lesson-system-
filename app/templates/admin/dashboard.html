@@ -3,230 +3,195 @@
 {% block title %}Admin Dashboard - DriveSmart{% endblock %}
 
 {% block content %}
-<div class="container-fluid">
-    <div class="row">
-        <div class="col-12">
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <h2 class="mb-0">
-                    <i class="fas fa-crown me-2 text-warning"></i>
-                    Admin Dashboard
-                </h2>
-                <div class="btn-group">
-                    <a href="{{ url_for('admin.users') }}" class="btn btn-outline-primary">
-                        <i class="fas fa-users me-2"></i>Manage Users
-                    </a>
-                    <a href="{{ url_for('admin.lessons') }}" class="btn btn-outline-info">
-                        <i class="fas fa-calendar-alt me-2"></i>Manage Lessons
-                    </a>
-                </div>
-            </div>
+<!-- Page Header -->
+<div class="ds-page-header d-flex justify-content-between align-items-center flex-wrap gap-3">
+    <div>
+        <h2 class="mb-1">Admin Dashboard <span class="ds-greeting">👑</span></h2>
+        <p class="text-muted mb-0">Platform overview and management tools</p>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="{{ url_for('admin.users') }}" class="btn btn-outline-primary rounded-pill px-3">
+            <i class="fas fa-users me-1"></i>Users
+        </a>
+        <a href="{{ url_for('admin.lessons') }}" class="btn btn-gradient rounded-pill px-3">
+            <i class="fas fa-calendar-alt me-1"></i>Lessons
+        </a>
+    </div>
+</div>
+
+<!-- Stat Cards -->
+<div class="row g-3 mb-4">
+    <div class="col-6 col-lg-3">
+        <div class="ds-stat-card">
+            <div class="ds-stat-icon primary"><i class="fas fa-users"></i></div>
+            <div class="ds-stat-value">{{ users|length }}</div>
+            <div class="ds-stat-label">Total Users</div>
         </div>
     </div>
-
-    <!-- Statistics Cards -->
-    <div class="row mb-4">
-        <div class="col-md-3">
-            <div class="card border-0 shadow-sm text-center">
-                <div class="card-body">
-                    <i class="fas fa-users fa-3x text-primary mb-3"></i>
-                    <h5 class="card-title">Total Users</h5>
-                    <p class="card-text display-4 fw-bold text-primary">{{ users|length }}</p>
-                </div>
+    <div class="col-6 col-lg-3">
+        <div class="ds-stat-card">
+            <div class="ds-stat-icon success"><i class="fas fa-chalkboard-teacher"></i></div>
+            <div class="ds-stat-value">
+                {% set instructor_count = 0 %}
+                {% for user in users %}{% if user.role == 'instructor' %}{% set instructor_count = instructor_count + 1 %}{% endif %}{% endfor %}
+                {{ instructor_count }}
             </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card border-0 shadow-sm text-center">
-                <div class="card-body">
-                    <i class="fas fa-chalkboard-teacher fa-3x text-success mb-3"></i>
-                    <h5 class="card-title">Instructors</h5>
-                    <p class="card-text display-4 fw-bold text-success">
-                        {% set instructor_count = 0 %}
-                        {% for user in users %}
-                            {% if user.role == 'instructor' %}
-                                {% set instructor_count = instructor_count + 1 %}
-                            {% endif %}
-                        {% endfor %}
-                        {{ instructor_count }}
-                    </p>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card border-0 shadow-sm text-center">
-                <div class="card-body">
-                    <i class="fas fa-user-graduate fa-3x text-info mb-3"></i>
-                    <h5 class="card-title">Students</h5>
-                    <p class="card-text display-4 fw-bold text-info">
-                        {% set student_count = 0 %}
-                        {% for user in users %}
-                            {% if user.role == 'student' %}
-                                {% set student_count = student_count + 1 %}
-                            {% endif %}
-                        {% endfor %}
-                        {{ student_count }}
-                    </p>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card border-0 shadow-sm text-center">
-                <div class="card-body">
-                    <i class="fas fa-calendar-check fa-3x text-warning mb-3"></i>
-                    <h5 class="card-title">Total Lessons</h5>
-                    <p class="card-text display-4 fw-bold text-warning">{{ lessons|length }}</p>
-                </div>
-            </div>
+            <div class="ds-stat-label">Instructors</div>
         </div>
     </div>
+    <div class="col-6 col-lg-3">
+        <div class="ds-stat-card">
+            <div class="ds-stat-icon info"><i class="fas fa-user-graduate"></i></div>
+            <div class="ds-stat-value">
+                {% set student_count = 0 %}
+                {% for user in users %}{% if user.role == 'student' %}{% set student_count = student_count + 1 %}{% endif %}{% endfor %}
+                {{ student_count }}
+            </div>
+            <div class="ds-stat-label">Students</div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="ds-stat-card">
+            <div class="ds-stat-icon warning"><i class="fas fa-calendar-check"></i></div>
+            <div class="ds-stat-value">{{ lessons|length }}</div>
+            <div class="ds-stat-label">Total Lessons</div>
+        </div>
+    </div>
+</div>
 
-    <!-- Recent Activity -->
-    <div class="row mb-4">
-        <div class="col-md-6">
-            <div class="card border-0 shadow-sm">
-                <div class="card-header bg-light">
-                    <h5 class="card-title mb-0">
-                        <i class="fas fa-clock me-2"></i>Recent Lessons
-                    </h5>
-                </div>
-                <div class="card-body">
-                    {% if lessons %}
-                    <div class="list-group list-group-flush">
-                        {% for lesson in lessons[:5] %}
-                        <div class="list-group-item px-0">
-                            <div class="d-flex justify-content-between align-items-center">
+<!-- Recent Activity -->
+<div class="row g-3 mb-4">
+    <div class="col-md-6">
+        <div class="card border-0">
+            <div class="card-header">
+                <h5 class="ds-section-title mb-0"><i class="fas fa-clock"></i>Recent Lessons</h5>
+            </div>
+            <div class="card-body">
+                {% if lessons %}
+                <div class="list-group list-group-flush">
+                    {% for lesson in lessons[:5] %}
+                    <div class="list-group-item px-0 border-0 border-bottom">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="ds-avatar sm">{{ lesson.student.username[0]|upper }}</div>
                                 <div>
-                                    <strong>{{ lesson.student.username }}</strong> with {{ lesson.instructor.username }}
-                                    <br>
-                                    <small class="text-muted">
-                                        {{ lesson.date.strftime('%b %d, %Y') }} at {{ lesson.time.strftime('%I:%M %p') }}
-                                    </small>
+                                    <strong>{{ lesson.student.username }}</strong> <span class="text-muted">with</span> {{ lesson.instructor.username }}
+                                    <br><small class="text-muted">{{ lesson.date.strftime('%b %d, %Y') }} at {{ lesson.time.strftime('%I:%M %p') }}</small>
                                 </div>
-                                <span class="badge bg-{{ 'success' if lesson.status == 'confirmed' else 'secondary' }}">
-                                    {{ lesson.status }}
-                                </span>
                             </div>
+                            {% if lesson.status == 'confirmed' %}
+                                <span class="badge bg-success">{{ lesson.status }}</span>
+                            {% elif lesson.status == 'completed' %}
+                                <span class="badge bg-primary">{{ lesson.status }}</span>
+                            {% else %}
+                                <span class="badge bg-secondary">{{ lesson.status }}</span>
+                            {% endif %}
                         </div>
-                        {% endfor %}
                     </div>
-                    {% else %}
-                    <div class="text-center py-3">
-                        <i class="fas fa-calendar-times fa-2x text-muted mb-2"></i>
-                        <p class="text-muted mb-0">No lessons scheduled</p>
-                    </div>
-                    {% endif %}
+                    {% endfor %}
                 </div>
+                {% else %}
+                <div class="ds-empty-state" style="padding: 2rem 1rem;">
+                    <i class="fas fa-calendar-times" style="font-size: 2rem;"></i>
+                    <h5>No lessons yet</h5>
+                </div>
+                {% endif %}
             </div>
         </div>
-        <div class="col-md-6">
-            <div class="card border-0 shadow-sm">
-                <div class="card-header bg-light">
-                    <h5 class="card-title mb-0">
-                        <i class="fas fa-user-plus me-2"></i>Recent Users
-                    </h5>
-                </div>
-                <div class="card-body">
-                    {% if users %}
-                    <div class="list-group list-group-flush">
-                        {% for user in users[:5] %}
-                        <div class="list-group-item px-0">
-                            <div class="d-flex justify-content-between align-items-center">
+    </div>
+    <div class="col-md-6">
+        <div class="card border-0">
+            <div class="card-header">
+                <h5 class="ds-section-title mb-0"><i class="fas fa-user-plus"></i>Recent Users</h5>
+            </div>
+            <div class="card-body">
+                {% if users %}
+                <div class="list-group list-group-flush">
+                    {% for user in users[:5] %}
+                    <div class="list-group-item px-0 border-0 border-bottom">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="ds-avatar sm">{{ user.username[0]|upper }}</div>
                                 <div>
                                     <strong>{{ user.username }}</strong>
-                                    <br>
-                                    <small class="text-muted">{{ user.email }}</small>
+                                    <br><small class="text-muted">{{ user.email }}</small>
                                 </div>
-                                <span class="badge bg-{{ 'primary' if user.role == 'student' else 'success' if user.role == 'instructor' else 'warning' }}">
-                                    {{ user.role }}
-                                </span>
                             </div>
+                            <span class="badge bg-{{ 'primary' if user.role == 'student' else 'success' if user.role == 'instructor' else 'warning' }}">
+                                {{ user.role }}
+                            </span>
                         </div>
-                        {% endfor %}
                     </div>
-                    {% else %}
-                    <div class="text-center py-3">
-                        <i class="fas fa-users fa-2x text-muted mb-2"></i>
-                        <p class="text-muted mb-0">No users registered</p>
-                    </div>
-                    {% endif %}
+                    {% endfor %}
                 </div>
+                {% else %}
+                <div class="ds-empty-state" style="padding: 2rem 1rem;">
+                    <i class="fas fa-users" style="font-size: 2rem;"></i>
+                    <h5>No users yet</h5>
+                </div>
+                {% endif %}
             </div>
         </div>
     </div>
+</div>
 
-    <!-- Quick Actions -->
-    <div class="row">
-        <div class="col-12">
-            <div class="card border-0 shadow-sm">
-                <div class="card-header bg-light">
-                    <h5 class="card-title mb-0">
-                        <i class="fas fa-tools me-2"></i>Quick Actions
-                    </h5>
-                </div>
-                <div class="card-body">
-                    <div class="row g-3">
-                        <div class="col-md-3">
-                            <a href="{{ url_for('admin.users') }}" class="btn btn-outline-primary w-100">
-                                <i class="fas fa-users me-2"></i>
-                                <div>Manage Users</div>
-                            </a>
-                        </div>
-                        <div class="col-md-3">
-                            <a href="{{ url_for('admin.lessons') }}" class="btn btn-outline-info w-100">
-                                <i class="fas fa-calendar-alt me-2"></i>
-                                <div>Manage Lessons</div>
-                            </a>
-                        </div>
-                        <div class="col-md-3">
-                            <button class="btn btn-outline-success w-100" onclick="generateReport()">
-                                <i class="fas fa-chart-bar me-2"></i>
-                                <div>Generate Report</div>
-                            </button>
-                        </div>
-                        <div class="col-md-3">
-                            <a href="{{ url_for('chatbot.chatbot_page') }}" class="btn btn-outline-warning w-100">
-                                <i class="fas fa-robot me-2"></i>
-                                <div>AI Assistant</div>
-                            </a>
-                        </div>
-                    </div>
-                </div>
+<!-- Quick Actions -->
+<div class="card border-0">
+    <div class="card-header">
+        <h5 class="ds-section-title mb-0"><i class="fas fa-bolt"></i>Quick Actions</h5>
+    </div>
+    <div class="card-body">
+        <div class="row g-2">
+            <div class="col-md-3">
+                <a href="{{ url_for('admin.users') }}" class="btn btn-outline-primary w-100 py-3">
+                    <i class="fas fa-users d-block mb-1 fs-5"></i>Manage Users
+                </a>
+            </div>
+            <div class="col-md-3">
+                <a href="{{ url_for('admin.lessons') }}" class="btn btn-outline-info w-100 py-3">
+                    <i class="fas fa-calendar-alt d-block mb-1 fs-5"></i>Manage Lessons
+                </a>
+            </div>
+            <div class="col-md-3">
+                <button class="btn btn-outline-success w-100 py-3" onclick="generateReport()">
+                    <i class="fas fa-chart-bar d-block mb-1 fs-5"></i>Generate Report
+                </button>
+            </div>
+            <div class="col-md-3">
+                <a href="{{ url_for('chatbot.chatbot_page') }}" class="btn btn-outline-warning w-100 py-3">
+                    <i class="fas fa-robot d-block mb-1 fs-5"></i>AI Assistant
+                </a>
             </div>
         </div>
     </div>
+</div>
 
-    <!-- System Status -->
-    <div class="row mt-4">
-        <div class="col-12">
-            <div class="card border-0 shadow-sm">
-                <div class="card-header bg-light">
-                    <h5 class="card-title mb-0">
-                        <i class="fas fa-server me-2"></i>System Status
-                    </h5>
-                </div>
-                <div class="card-body">
-                    <div class="row text-center">
-                        <div class="col-md-3">
-                            <i class="fas fa-database fa-2x text-success mb-2"></i>
-                            <h6>Database</h6>
-                            <span class="badge bg-success">Online</span>
-                        </div>
-                        <div class="col-md-3">
-                            <i class="fas fa-envelope fa-2x text-success mb-2"></i>
-                            <h6>Email Service</h6>
-                            <span class="badge bg-success">Active</span>
-                        </div>
-                        <div class="col-md-3">
-                            <i class="fas fa-shield-alt fa-2x text-success mb-2"></i>
-                            <h6>Security</h6>
-                            <span class="badge bg-success">Secure</span>
-                        </div>
-                        <div class="col-md-3">
-                            <i class="fas fa-clock fa-2x text-info mb-2"></i>
-                            <h6>Last Backup</h6>
-                            <span class="badge bg-info">Today</span>
-                        </div>
-                    </div>
-                </div>
+<!-- System Status -->
+<div class="card border-0 mt-3">
+    <div class="card-header">
+        <h5 class="ds-section-title mb-0"><i class="fas fa-server"></i>System Status</h5>
+    </div>
+    <div class="card-body">
+        <div class="row g-3 text-center">
+            <div class="col-md-3">
+                <div class="ds-stat-icon success mx-auto mb-2"><i class="fas fa-database"></i></div>
+                <h6 class="mb-1">Database</h6>
+                <span class="badge bg-success">Online</span>
+            </div>
+            <div class="col-md-3">
+                <div class="ds-stat-icon success mx-auto mb-2"><i class="fas fa-envelope"></i></div>
+                <h6 class="mb-1">Email Service</h6>
+                <span class="badge bg-success">Active</span>
+            </div>
+            <div class="col-md-3">
+                <div class="ds-stat-icon success mx-auto mb-2"><i class="fas fa-shield-alt"></i></div>
+                <h6 class="mb-1">Security</h6>
+                <span class="badge bg-success">Secure</span>
+            </div>
+            <div class="col-md-3">
+                <div class="ds-stat-icon info mx-auto mb-2"><i class="fas fa-clock"></i></div>
+                <h6 class="mb-1">Last Backup</h6>
+                <span class="badge bg-info">Today</span>
             </div>
         </div>
     </div>
@@ -235,7 +200,6 @@
 <script>
 function generateReport() {
     alert('Report generation feature coming soon!');
-    // TODO: Implement report generation functionality
 }
 </script>
 {% endblock %}
