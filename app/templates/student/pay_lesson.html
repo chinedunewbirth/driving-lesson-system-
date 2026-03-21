@@ -1,0 +1,241 @@
+{% extends "base.html" %}
+
+{% block title %}Pay for Lesson - DriveSmart{% endblock %}
+
+{% block head %}
+<style>
+    #card-element {
+        border: 2px solid #e9ecef;
+        border-radius: 8px;
+        padding: 12px;
+        background: white;
+        transition: border-color 0.3s ease;
+    }
+    #card-element.StripeElement--focus {
+        border-color: #667eea;
+        box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+    }
+    #card-element.StripeElement--invalid {
+        border-color: #dc3545;
+    }
+    .payment-summary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 15px;
+        color: white;
+    }
+    .price-tag {
+        font-size: 2.5rem;
+        font-weight: 700;
+    }
+    #payment-spinner {
+        display: none;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="mb-4">
+            <a href="{{ url_for('student.dashboard') }}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+            </a>
+        </div>
+
+        <div class="row g-4">
+            <!-- Payment Summary -->
+            <div class="col-md-5">
+                <div class="payment-summary p-4 shadow-lg">
+                    <h5 class="mb-3"><i class="fas fa-receipt me-2"></i>Order Summary</h5>
+                    <hr class="border-light">
+                    <div class="mb-3">
+                        <small class="text-white-50">Lesson Date</small>
+                        <p class="mb-1 fw-bold">{{ lesson.date.strftime('%A, %B %d, %Y') if lesson.date else 'TBD' }}</p>
+                    </div>
+                    <div class="mb-3">
+                        <small class="text-white-50">Time</small>
+                        <p class="mb-1 fw-bold">{{ lesson.time.strftime('%I:%M %p') if lesson.time else 'TBD' }}</p>
+                    </div>
+                    <div class="mb-3">
+                        <small class="text-white-50">Duration</small>
+                        <p class="mb-1 fw-bold">{{ ((lesson.duration or 60) / 60)|round(1) }} hour{{ 's' if lesson.duration and lesson.duration != 60 else '' }}</p>
+                    </div>
+                    <div class="mb-3">
+                        <small class="text-white-50">Instructor</small>
+                        <p class="mb-1 fw-bold">{{ lesson.instructor.username if lesson.instructor else 'Assigned' }}</p>
+                    </div>
+                    <hr class="border-light">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span class="fs-5">Total</span>
+                        <span class="price-tag">&pound;{{ '%.2f'|format(total_price) }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Payment Form -->
+            <div class="col-md-7">
+                <div class="card border-0 shadow-lg">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="mb-0"><i class="fas fa-credit-card me-2"></i>Payment Details</h5>
+                    </div>
+                    <div class="card-body p-4">
+                        <form id="payment-form">
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Cardholder Name</label>
+                                <input type="text" id="card-name" class="form-control form-control-lg"
+                                       value="{{ current_user.username }}" required>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Email</label>
+                                <input type="email" id="card-email" class="form-control form-control-lg"
+                                       value="{{ current_user.email }}" required>
+                            </div>
+
+                            <div class="mb-4">
+                                <label class="form-label fw-bold">Card Details</label>
+                                <div id="card-element"></div>
+                                <div id="card-errors" class="text-danger mt-2 small" role="alert"></div>
+                            </div>
+
+                            <div id="payment-message" class="alert d-none mb-3" role="alert"></div>
+
+                            <button id="submit-btn" type="submit" class="btn btn-success btn-lg w-100">
+                                <span id="button-text">
+                                    <i class="fas fa-lock me-2"></i>Pay &pound;{{ '%.2f'|format(total_price) }}
+                                </span>
+                                <span id="payment-spinner" class="spinner-border spinner-border-sm me-2" role="status"></span>
+                            </button>
+
+                            <div class="mt-3 text-center">
+                                <small class="text-muted">
+                                    <i class="fas fa-shield-alt me-1"></i>
+                                    Secure payment powered by Stripe. Your card details are encrypted.
+                                </small>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{% if stripe_public_key %}
+<script src="https://js.stripe.com/v3/"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const stripe = Stripe('{{ stripe_public_key }}');
+    const elements = stripe.elements();
+    const cardElement = elements.create('card', {
+        style: {
+            base: {
+                fontSize: '16px',
+                color: '#333',
+                fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
+                '::placeholder': { color: '#aab7c4' }
+            },
+            invalid: { color: '#dc3545' }
+        }
+    });
+    cardElement.mount('#card-element');
+
+    // Show card errors
+    cardElement.on('change', function(event) {
+        const errorEl = document.getElementById('card-errors');
+        errorEl.textContent = event.error ? event.error.message : '';
+    });
+
+    // Handle form submission
+    const form = document.getElementById('payment-form');
+    const submitBtn = document.getElementById('submit-btn');
+    const spinner = document.getElementById('payment-spinner');
+    const btnText = document.getElementById('button-text');
+    const messageEl = document.getElementById('payment-message');
+
+    form.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        setLoading(true);
+
+        // Create payment intent on server
+        const response = await fetch('{{ url_for("student.create_payment_intent", lesson_id=lesson.id) }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+            }
+        });
+
+        const data = await response.json();
+
+        if (data.error) {
+            showMessage(data.error, 'danger');
+            setLoading(false);
+            return;
+        }
+
+        // Confirm payment with Stripe
+        const { error, paymentIntent } = await stripe.confirmCardPayment(data.clientSecret, {
+            payment_method: {
+                card: cardElement,
+                billing_details: {
+                    name: document.getElementById('card-name').value,
+                    email: document.getElementById('card-email').value
+                }
+            }
+        });
+
+        if (error) {
+            showMessage(error.message, 'danger');
+            setLoading(false);
+        } else if (paymentIntent.status === 'succeeded') {
+            showMessage('Payment successful! Redirecting...', 'success');
+            setTimeout(function() {
+                window.location.href = '{{ url_for("student.payment_success", lesson_id=lesson.id) }}';
+            }, 1500);
+        }
+    });
+
+    function setLoading(loading) {
+        submitBtn.disabled = loading;
+        spinner.style.display = loading ? 'inline-block' : 'none';
+        btnText.style.display = loading ? 'none' : 'inline';
+    }
+
+    function showMessage(text, type) {
+        messageEl.className = 'alert alert-' + type + ' mb-3';
+        messageEl.textContent = text;
+    }
+});
+</script>
+{% else %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Demo mode - no Stripe key configured
+    const form = document.getElementById('payment-form');
+    const messageEl = document.getElementById('payment-message');
+    const cardEl = document.getElementById('card-element');
+    
+    cardEl.innerHTML = '<div class="text-center py-3"><i class="fas fa-info-circle text-primary me-2"></i>Demo mode - Stripe not configured. Payment will be simulated.</div>';
+    
+    form.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        document.getElementById('submit-btn').disabled = true;
+        document.getElementById('payment-spinner').style.display = 'inline-block';
+        document.getElementById('button-text').style.display = 'none';
+        
+        // Simulate payment processing
+        setTimeout(function() {
+            messageEl.className = 'alert alert-success mb-3';
+            messageEl.textContent = 'Demo payment successful! Redirecting...';
+            setTimeout(function() {
+                window.location.href = '{{ url_for("student.payment_success", lesson_id=lesson.id) }}';
+            }, 1500);
+        }, 2000);
+    });
+});
+</script>
+{% endif %}
+{% endblock %}

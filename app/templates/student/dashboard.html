@@ -72,6 +72,7 @@
                         <th><i class="fas fa-clock me-1"></i>Time</th>
                         <th><i class="fas fa-hourglass me-1"></i>Duration</th>
                         <th><i class="fas fa-info-circle me-1"></i>Status</th>
+                        <th><i class="fas fa-credit-card me-1"></i>Payment</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -85,6 +86,15 @@
                         <td>{{ ((lesson.duration or 0) / 60)|round(1) }} hour{{ 's' if lesson.duration and lesson.duration != 60 else '' }}</td>
                         <td>
                             <span class="badge bg-{{ 'success' if lesson.status == 'confirmed' else 'warning' if lesson.status == 'pending' else 'danger' }}">{{ lesson.status|capitalize }}</span>
+                        </td>
+                        <td>
+                            {% if lesson.payment and lesson.payment|selectattr('status','equalto','completed')|list %}
+                                <span class="badge bg-success"><i class="fas fa-check me-1"></i>Paid</span>
+                            {% else %}
+                                <a href="{{ url_for('student.pay_lesson', lesson_id=lesson.id) }}" class="btn btn-sm btn-outline-success">
+                                    <i class="fas fa-credit-card me-1"></i>Pay
+                                </a>
+                            {% endif %}
                         </td>
                     </tr>
                     {% endfor %}
@@ -122,6 +132,9 @@
                     </a>
                     <a href="{{ url_for('chatbot.chatbot_page') }}" class="btn btn-outline-info">
                         <i class="fas fa-robot me-2"></i>Ask AI Assistant
+                    </a>
+                    <a href="{{ url_for('student.payments') }}" class="btn btn-outline-success">
+                        <i class="fas fa-receipt me-2"></i>Payment History
                     </a>
                 </div>
             </div>
