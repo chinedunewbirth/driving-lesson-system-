@@ -105,6 +105,72 @@
     </div>
 </div>
 
+<!-- Instructor Performance Section -->
+{% if instructors %}
+<div class="container mb-5">
+    <div class="text-center mb-5">
+        <span class="badge bg-primary bg-opacity-10 text-primary fw-bold px-3 py-2 rounded-pill mb-2">Meet Our Team</span>
+        <h2 class="fw-bold">Instructor Performance</h2>
+        <p class="text-muted mx-auto" style="max-width:520px">Our instructors are rated by real results. See their track record before you book.</p>
+    </div>
+    <div class="row g-4">
+        {% for inst in instructors %}
+        <div class="col-md-6 col-lg-4">
+            <div class="ds-feature-card h-100 position-relative overflow-hidden">
+                <!-- Instructor Header -->
+                <div class="d-flex align-items-center mb-3">
+                    <div class="ds-avatar me-3" style="background:var(--ds-gradient);color:#fff;width:52px;height:52px;font-size:1.25rem">
+                        {{ inst.username[0]|upper }}
+                    </div>
+                    <div>
+                        <h5 class="mb-0 fw-bold">{{ inst.username }}</h5>
+                        <small class="text-muted">{{ inst.bio|truncate(40) }}</small>
+                    </div>
+                </div>
+
+                <!-- Performance Metrics -->
+                <div class="row g-2 mb-3">
+                    <div class="col-6">
+                        <div class="rounded-3 p-2 text-center" style="background:var(--ds-surface-alt)">
+                            <div class="fw-bold text-primary">{{ inst.total_lessons }}</div>
+                            <small class="text-muted">Lessons</small>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="rounded-3 p-2 text-center" style="background:var(--ds-surface-alt)">
+                            <div class="fw-bold text-success">{{ inst.completed_lessons }}</div>
+                            <small class="text-muted">Completed</small>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="rounded-3 p-2 text-center" style="background:var(--ds-surface-alt)">
+                            <div class="fw-bold" style="color:var(--ds-accent)">{{ inst.hours_taught }}h</div>
+                            <small class="text-muted">Hours Taught</small>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="rounded-3 p-2 text-center" style="background:var(--ds-surface-alt)">
+                            <div class="fw-bold text-warning">£{{ '%.2f'|format(inst.hourly_rate) }}</div>
+                            <small class="text-muted">Per Hour</small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Completion Rate Bar -->
+                <div class="mb-1 d-flex justify-content-between">
+                    <small class="text-muted fw-semibold">Completion Rate</small>
+                    <small class="fw-bold {% if inst.completion_rate >= 80 %}text-success{% elif inst.completion_rate >= 50 %}text-warning{% else %}text-danger{% endif %}">{{ inst.completion_rate }}%</small>
+                </div>
+                <div class="progress rounded-pill" style="height:8px">
+                    <div class="progress-bar rounded-pill {% if inst.completion_rate >= 80 %}bg-success{% elif inst.completion_rate >= 50 %}bg-warning{% else %}bg-danger{% endif %}" role="progressbar" style="width:{{ inst.completion_rate }}%"></div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
 <!-- CTA Section -->
 {% if current_user.is_anonymous %}
 <div class="container mb-5">

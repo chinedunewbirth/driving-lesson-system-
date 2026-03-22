@@ -1,6 +1,6 @@
 from flask_wtf import FlaskForm
-from wtforms import StringField, PasswordField, SubmitField, SelectField, DateField, TimeField, IntegerField, TextAreaField, FloatField, RadioField
-from wtforms.validators import DataRequired, Email, EqualTo, ValidationError
+from wtforms import StringField, PasswordField, SubmitField, SelectField, DateField, TimeField, IntegerField, TextAreaField, FloatField, RadioField, HiddenField
+from wtforms.validators import DataRequired, Email, EqualTo, ValidationError, Optional
 from app.models import User
 
 class LoginForm(FlaskForm):
@@ -45,7 +45,11 @@ class InstructorRegisterStudentForm(FlaskForm):
 
 class InstructorProfileForm(FlaskForm):
     bio = TextAreaField('Bio', validators=[DataRequired()])
-    hourly_rate = FloatField('Hourly Rate ($)', validators=[DataRequired()])
+    hourly_rate = FloatField('Hourly Rate (£)', validators=[DataRequired()])
+    address = StringField('Service Area Address', validators=[Optional()])
+    latitude = HiddenField('Latitude')
+    longitude = HiddenField('Longitude')
+    service_radius_km = FloatField('Service Radius (km)', validators=[Optional()], default=15.0)
     submit = SubmitField('Save')
 
 class StudentProfileForm(FlaskForm):
@@ -57,6 +61,9 @@ class BookLessonForm(FlaskForm):
     date = DateField('Date', validators=[DataRequired()])
     time = TimeField('Time', validators=[DataRequired()])
     duration = IntegerField('Duration (hours)', validators=[DataRequired()])
+    pickup_address = StringField('Pickup Address', validators=[Optional()])
+    pickup_lat = HiddenField('Pickup Latitude')
+    pickup_lng = HiddenField('Pickup Longitude')
     submit = SubmitField('Book Lesson')
 
 class ChatbotForm(FlaskForm):

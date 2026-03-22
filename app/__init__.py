@@ -48,6 +48,20 @@ def create_app(config_class=Config):
     app.register_blueprint(admin.bp)
     app.register_blueprint(chatbot.bp)
 
+    # CLI command to create admin user
+    @app.cli.command('create-admin')
+    def create_admin():
+        """Create the default admin user."""
+        from app.models import User
+        if User.query.filter_by(role='admin').first():
+            print('Admin user already exists.')
+            return
+        admin_user = User(username='admin', email='admin@drivesmart.com', role='admin')
+        admin_user.set_password('admin123')
+        db.session.add(admin_user)
+        db.session.commit()
+        print('Admin user created: admin@drivesmart.com / admin123')
+
     # Health check endpoint
     @app.route('/health')
     def health():

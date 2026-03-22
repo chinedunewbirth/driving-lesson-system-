@@ -2,6 +2,19 @@
 
 {% block title %}Instructor Profile - DriveSmart{% endblock %}
 
+{% block head %}
+<style>
+    .avail-grid { border: 1px solid var(--ds-border); border-radius: var(--ds-radius); overflow: hidden; }
+    .avail-day { padding: .75rem 1rem; border-bottom: 1px solid var(--ds-border); }
+    .avail-day:last-child { border-bottom: none; }
+    .avail-day-name { font-weight: 600; min-width: 80px; }
+    .avail-slot { display: inline-flex; align-items: center; gap: .35rem; background: var(--ds-gradient-subtle); border-radius: 20px; padding: .25rem .75rem; font-size: .82rem; margin: .15rem; }
+    .avail-slot .remove-slot { cursor: pointer; opacity: .6; }
+    .avail-slot .remove-slot:hover { opacity: 1; color: var(--ds-danger); }
+    .location-preview { background: var(--ds-surface-alt); border-radius: var(--ds-radius); padding: 1rem; }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="row justify-content-center">
     <div class="col-lg-10">
@@ -86,13 +99,48 @@
                         </div>
                     </div>
 
+                    <!-- Location Section -->
+                    <div class="mb-4">
+                        <h6 class="ds-section-title"><i class="fas fa-map-marker-alt"></i>Service Location</h6>
+                        <p class="small text-muted">Set your base location so students near you can find you easily.</p>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label for="address" class="form-label fw-semibold">
+                                    <i class="fas fa-home me-1 text-primary"></i>Address / Area
+                                </label>
+                                {{ form.address(class="form-control", placeholder="e.g. Croydon, London", id="address") }}
+                            </div>
+                            <div class="col-md-3">
+                                <label for="service_radius_km" class="form-label fw-semibold">
+                                    <i class="fas fa-bullseye me-1 text-info"></i>Radius (km)
+                                </label>
+                                {{ form.service_radius_km(class="form-control", id="service_radius_km", min="1", max="100") }}
+                            </div>
+                            <div class="col-md-3 d-flex align-items-end">
+                                <button type="button" class="btn btn-outline-primary rounded-pill w-100" id="detect-location-btn">
+                                    <i class="fas fa-crosshairs me-1"></i>Detect
+                                </button>
+                            </div>
+                        </div>
+                        {{ form.latitude(id="latitude") }}
+                        {{ form.longitude(id="longitude") }}
+                        <div id="loc-preview" class="location-preview mt-2 {% if not form.latitude.data %}d-none{% endif %}">
+                            <i class="fas fa-map-pin me-1 text-success"></i>
+                            <span id="loc-preview-text">
+                                {% if form.latitude.data and form.longitude.data %}
+                                Coordinates: {{ form.latitude.data }}, {{ form.longitude.data }}
+                                {% endif %}
+                            </span>
+                        </div>
+                    </div>
+
                     <!-- Tips -->
                     <div class="alert alert-info border-0" style="background: #eff6ff; border-left: 4px solid var(--ds-info) !important;">
                         <h6 class="mb-2"><i class="fas fa-lightbulb me-2"></i>Tips for a Great Profile</h6>
                         <ul class="mb-0 small">
                             <li>Highlight your years of experience and certifications</li>
-                            <li>Mention your teaching style and approach to student safety</li>
-                            <li>Include any specialisations (defensive driving, teen instruction, etc.)</li>
+                            <li>Set your location so nearby students can find you</li>
+                            <li>Configure your weekly availability below so students can book instantly</li>
                             <li>Set competitive rates that reflect your expertise</li>
                         </ul>
                     </div>
@@ -107,6 +155,66 @@
                         </button>
                     </div>
                 </form>
+            </div>
+        </div>
+
+        <!-- Weekly Availability -->
+        <div class="card border-0 mt-4">
+            <div class="card-header">
+                <h5 class="ds-section-title mb-0"><i class="fas fa-clock"></i>Weekly Availability</h5>
+                <p class="small text-muted mb-0 mt-1">Set the hours you're available for lessons each day. Students will only see these times when booking.</p>
+            </div>
+            <div class="card-body">
+                <div class="avail-grid" id="availability-grid">
+                    {% set day_names = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'] %}
+                    {% for day_idx in range(7) %}
+                    <div class="avail-day d-flex align-items-center flex-wrap gap-2" data-day="{{ day_idx }}">
+                        <span class="avail-day-name">{{ day_names[day_idx] }}</span>
+                        <div class="avail-slots d-flex flex-wrap gap-1" id="slots-day-{{ day_idx }}">
+                            {% for slot in availability if slot.day_of_week == day_idx %}
+                            <span class="avail-slot" data-start="{{ slot.start_time.strftime('%H:%M') }}" data-end="{{ slot.end_time.strftime('%H:%M') }}">
+                                {{ slot.start_time.strftime('%H:%M') }} - {{ slot.end_time.strftime('%H:%M') }}
+                                <i class="fas fa-times-circle remove-slot"></i>
+                            </span>
+                            {% endfor %}
+                        </div>
+                        <button type="button" class="btn btn-sm btn-outline-primary rounded-pill add-slot-btn" data-day="{{ day_idx }}">
+                            <i class="fas fa-plus me-1"></i>Add
+                        </button>
+                    </div>
+                    {% endfor %}
+                </div>
+                <div class="d-flex justify-content-end mt-3">
+                    <button type="button" class="btn btn-gradient rounded-pill px-4" id="save-availability-btn">
+                        <i class="fas fa-save me-2"></i>Save Availability
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Add Slot Modal -->
+        <div class="modal fade" id="addSlotModal" tabindex="-1">
+            <div class="modal-dialog modal-sm modal-dialog-centered">
+                <div class="modal-content" style="border-radius: var(--ds-radius-lg); border: none;">
+                    <div class="modal-header border-0 pb-0">
+                        <h6 class="modal-title"><i class="fas fa-plus-circle me-2 text-primary"></i>Add Time Slot</h6>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Start Time</label>
+                            <input type="time" class="form-control" id="slot-start" value="09:00">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">End Time</label>
+                            <input type="time" class="form-control" id="slot-end" value="17:00">
+                        </div>
+                    </div>
+                    <div class="modal-footer border-0 pt-0">
+                        <button type="button" class="btn btn-outline-secondary rounded-pill btn-sm" data-bs-dismiss="modal">Cancel</button>
+                        <button type="button" class="btn btn-primary rounded-pill btn-sm" id="confirm-slot-btn">Add Slot</button>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -132,6 +240,7 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
     const bioTextarea = document.getElementById('bio');
     const charCount = document.getElementById('char-count');
     const hourlyRate = document.getElementById('hourly_rate');
@@ -162,6 +271,100 @@ document.addEventListener('DOMContentLoaded', function() {
         saveBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Saving...';
         saveBtn.disabled = true;
         setTimeout(() => { saveBtn.innerHTML = originalText; saveBtn.disabled = false; }, 2000);
+    });
+
+    // ── Location Detection ─────────────────────────────
+    document.getElementById('detect-location-btn').addEventListener('click', function() {
+        const btn = this;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>';
+        btn.disabled = true;
+        if (!navigator.geolocation) {
+            btn.innerHTML = '<i class="fas fa-crosshairs me-1"></i>Detect';
+            btn.disabled = false;
+            alert('Geolocation not supported.');
+            return;
+        }
+        navigator.geolocation.getCurrentPosition(function(pos) {
+            document.getElementById('latitude').value = pos.coords.latitude.toFixed(6);
+            document.getElementById('longitude').value = pos.coords.longitude.toFixed(6);
+            document.getElementById('loc-preview').classList.remove('d-none');
+            document.getElementById('loc-preview-text').textContent =
+                'Coordinates: ' + pos.coords.latitude.toFixed(4) + ', ' + pos.coords.longitude.toFixed(4);
+            btn.innerHTML = '<i class="fas fa-check me-1"></i>Done';
+            btn.disabled = false;
+        }, function(err) {
+            btn.innerHTML = '<i class="fas fa-crosshairs me-1"></i>Detect';
+            btn.disabled = false;
+            alert('Could not detect location: ' + err.message);
+        }, { timeout: 10000 });
+    });
+
+    // ── Availability Management ────────────────────────
+    let addingDay = 0;
+    const modal = new bootstrap.Modal(document.getElementById('addSlotModal'));
+
+    document.querySelectorAll('.add-slot-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            addingDay = parseInt(this.dataset.day);
+            document.getElementById('slot-start').value = '09:00';
+            document.getElementById('slot-end').value = '17:00';
+            modal.show();
+        });
+    });
+
+    document.getElementById('confirm-slot-btn').addEventListener('click', function() {
+        const start = document.getElementById('slot-start').value;
+        const end = document.getElementById('slot-end').value;
+        if (!start || !end || start >= end) {
+            alert('End time must be after start time.');
+            return;
+        }
+        addSlotToUI(addingDay, start, end);
+        modal.hide();
+    });
+
+    function addSlotToUI(day, start, end) {
+        const container = document.getElementById('slots-day-' + day);
+        const span = document.createElement('span');
+        span.className = 'avail-slot';
+        span.dataset.start = start;
+        span.dataset.end = end;
+        span.innerHTML = start + ' - ' + end + ' <i class="fas fa-times-circle remove-slot"></i>';
+        span.querySelector('.remove-slot').addEventListener('click', function() { span.remove(); });
+        container.appendChild(span);
+    }
+
+    document.querySelectorAll('.remove-slot').forEach(btn => {
+        btn.addEventListener('click', function() { this.closest('.avail-slot').remove(); });
+    });
+
+    document.getElementById('save-availability-btn').addEventListener('click', function() {
+        const btn = this;
+        const slots = [];
+        document.querySelectorAll('.avail-day').forEach(dayEl => {
+            const day = parseInt(dayEl.dataset.day);
+            dayEl.querySelectorAll('.avail-slot').forEach(slotEl => {
+                slots.push({ day: day, start: slotEl.dataset.start, end: slotEl.dataset.end });
+            });
+        });
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Saving...';
+        btn.disabled = true;
+        fetch('/instructor/availability', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
+            body: JSON.stringify({ slots: slots })
+        })
+        .then(r => r.json())
+        .then(data => {
+            btn.innerHTML = '<i class="fas fa-check me-2"></i>Saved';
+            btn.disabled = false;
+            setTimeout(() => { btn.innerHTML = '<i class="fas fa-save me-2"></i>Save Availability'; }, 2000);
+        })
+        .catch(() => {
+            btn.innerHTML = '<i class="fas fa-save me-2"></i>Save Availability';
+            btn.disabled = false;
+            alert('Failed to save availability.');
+        });
     });
 });
 </script>

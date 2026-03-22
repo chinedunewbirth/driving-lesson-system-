@@ -1,8 +1,9 @@
-from flask import Blueprint, render_template, flash, redirect, url_for, request
+from flask import Blueprint, render_template, flash, redirect, url_for, request, jsonify
 from flask_login import login_required, current_user
 from app import db
-from app.models import Lesson, InstructorProfile, User, StudentProfile
+from app.models import Lesson, InstructorProfile, InstructorAvailability, User, StudentProfile
 from app.forms import InstructorProfileForm, InstructorRegisterStudentForm
+from datetime import time as dt_time
 
 bp = Blueprint('instructor', __name__)
 
@@ -30,15 +31,38 @@ def profile():
         db.session.commit()
     form = InstructorProfileForm()
     if form.validate_on_submit():
-        current_user.instructor_profile.bio = form.bio.data
-        current_user.instructor_profile.hourly_rate = form.hourly_rate.data
+        p = current_user.instructor_profile
+        p.bio = form.bio.data
+        p.hourly_rate = form.hourly_rate.data
+        p.address = form.address.data
+        if form.latitude.data:
+            try:
+                p.latitude = float(form.latitude.data)
+            except (ValueError, TypeError):
+                pass
+        if form.longitude.data:
+            try:
+                p.longitude = float(form.longitude.data)
+            except (ValueError, TypeError):
+                pass
+        if form.service_radius_km.data:
+            p.service_radius_km = form.service_radius_km.data
         db.session.commit()
         flash('Profile updated.')
         return redirect(url_for('instructor.profile'))
     elif request.method == 'GET':
-        form.bio.data = current_user.instructor_profile.bio
-        form.hourly_rate.data = current_user.instructor_profile.hourly_rate
-    return render_template('instructor/profile.html', form=form)
+        p = current_user.instructor_profile
+        form.bio.data = p.bio
+        form.hourly_rate.data = p.hourly_rate
+        form.address.data = p.address
+        form.latitude.data = p.latitude
+        form.longitude.data = p.longitude
+        form.service_radius_km.data = p.service_radius_km or 15.0
+    availability = InstructorAvailability.query.filter_by(
+        instructor_id=current_user.id
+    ).order_by(InstructorAvailability.day_of_week, InstructorAvailability.start_time).all()
+    lessons = Lesson.query.filter_by(instructor_id=current_user.id).all()
+    return render_template('instructor/profile.html', form=form, availability=availability, lessons=lessons)
 
 @bp.route('/instructor/cancel/<int:lesson_id>', methods=['POST'])
 @login_required
@@ -82,3 +106,57 @@ def register_student():
         flash('Student registered successfully!')
         return redirect(url_for('instructor.dashboard'))
     return render_template('instructor/register_student.html', form=form)
+
+
+@bp.route('/instructor/availability', methods=['POST'])
+@login_required
+def save_availability():
+    """Save weekly availability slots."""
+    if not current_user.is_instructor():
+        return jsonify({'error': 'Access denied'}), 403
+
+    data = request.get_json()
+    if not data or 'slots' not in data:
+        return jsonify({'error': 'Invalid data'}), 400
+
+    # Clear existing availability
+    InstructorAvailability.query.filter_by(instructor_id=current_user.id).delete()
+
+    for slot in data['slots']:
+        day = int(slot.get('day', 0))
+        start = slot.get('start', '')
+        end = slot.get('end', '')
+        if not start or not end or day < 0 or day > 6:
+            continue
+        try:
+            sh, sm = map(int, start.split(':'))
+            eh, em = map(int, end.split(':'))
+        except (ValueError, AttributeError):
+            continue
+        if sh >= eh and not (eh == 0 and em == 0):
+            continue
+        avail = InstructorAvailability(
+            instructor_id=current_user.id,
+            day_of_week=day,
+            start_time=dt_time(sh, sm),
+            end_time=dt_time(eh, em)
+        )
+        db.session.add(avail)
+
+    db.session.commit()
+    return jsonify({'success': True})
+
+
+@bp.route('/instructor/availability', methods=['GET'])
+@login_required
+def get_availability():
+    """Get own availability as JSON."""
+    if not current_user.is_instructor():
+        return jsonify({'error': 'Access denied'}), 403
+    slots = InstructorAvailability.query.filter_by(
+        instructor_id=current_user.id
+    ).order_by(InstructorAvailability.day_of_week, InstructorAvailability.start_time).all()
+    return jsonify({'slots': [
+        {'day': s.day_of_week, 'start': s.start_time.strftime('%H:%M'), 'end': s.end_time.strftime('%H:%M')}
+        for s in slots
+    ]})

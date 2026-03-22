@@ -2,12 +2,31 @@
 
 {% block title %}Book a Lesson - DriveSmart{% endblock %}
 
+{% block head %}
+<link href='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.css' rel='stylesheet' />
+<script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js'></script>
+<style>
+    .step-card { transition: all .3s ease; }
+    .step-card.locked { opacity: .5; pointer-events: none; }
+    .instructor-result { cursor: pointer; transition: all .25s; border-radius: var(--ds-radius); }
+    .instructor-result:hover, .instructor-result.selected { border-color: var(--ds-primary) !important; background: var(--ds-gradient-subtle); }
+    .distance-badge { font-size: .75rem; }
+    #calendar-wrap .fc { font-size: .85rem; }
+    #calendar-wrap .fc-event { cursor: pointer; border: none; border-radius: 4px; font-weight: 500; }
+    #calendar-wrap .fc-toolbar-title { font-size: 1.1rem !important; }
+    .slot-legend { display: flex; gap: 1rem; margin-bottom: .75rem; }
+    .slot-legend span { display: flex; align-items: center; gap: .35rem; font-size: .8rem; }
+    .slot-legend .dot { width: 12px; height: 12px; border-radius: 50%; display: inline-block; }
+    .location-status { font-size: .8rem; }
+</style>
+{% endblock %}
+
 {% block content %}
 <!-- Page Header -->
 <div class="ds-page-header d-flex justify-content-between align-items-center flex-wrap gap-3">
     <div>
         <h2 class="mb-1">Book Your Driving Lesson</h2>
-        <p class="text-muted mb-0">Choose an instructor and schedule your lesson</p>
+        <p class="text-muted mb-0">Find nearby instructors, pick an available slot, and confirm</p>
     </div>
     <a href="{{ url_for('student.dashboard') }}" class="btn btn-outline-secondary rounded-pill px-3">
         <i class="fas fa-arrow-left me-1"></i>Dashboard
@@ -16,181 +35,450 @@
 
 <form method="post" novalidate id="booking-form">
     {{ form.hidden_tag() }}
+    <input type="hidden" name="instructor_id" id="instructor_id">
+    <input type="hidden" name="date" id="form-date">
+    <input type="hidden" name="time" id="form-time">
+    <input type="hidden" name="duration" id="form-duration" value="1">
+    <input type="hidden" name="pickup_address" id="form-pickup-address">
+    <input type="hidden" name="pickup_lat" id="form-pickup-lat">
+    <input type="hidden" name="pickup_lng" id="form-pickup-lng">
 
-    <!-- Step 1: Choose Instructor -->
-    <div class="card border-0 mb-4">
+    <!-- Step 1: Location & Find Instructors -->
+    <div class="card border-0 mb-4 step-card" id="step1-card">
         <div class="card-header bg-transparent">
             <h5 class="ds-section-title mb-0">
-                <span class="badge rounded-pill bg-primary me-2">1</span>Choose Your Instructor
+                <span class="badge rounded-pill bg-primary me-2">1</span>
+                <i class="fas fa-map-marker-alt me-1"></i>Your Pickup Location
             </h5>
         </div>
         <div class="card-body">
-            <div class="row g-3">
-                {% for instructor in instructors %}
-                <div class="col-md-6 col-lg-4">
-                    <div class="card h-100 border instructor-card" data-instructor-id="{{ instructor.id }}"
-                         style="cursor:pointer; transition: all 0.3s ease; border-radius: var(--ds-radius);">
-                        <div class="card-body text-center p-4">
-                            <div class="ds-avatar lg mx-auto mb-3">{{ instructor.username[0]|upper }}</div>
-                            <h6 class="mb-1">{{ instructor.username }}</h6>
-                            {% if instructor.instructor_profile %}
-                            <p class="small text-muted mb-2">
-                                {{ instructor.instructor_profile.bio|truncate(50) if instructor.instructor_profile.bio else "Experienced driving instructor" }}
-                            </p>
-                            <span class="badge rounded-pill" style="background: var(--ds-gradient-subtle); color: var(--ds-primary);">
-                                <i class="fas fa-pound-sign me-1"></i>£{{ instructor.instructor_profile.hourly_rate }}/hour
-                            </span>
-                            {% endif %}
-                            <div class="form-check mt-3 d-flex justify-content-center">
-                                <input class="form-check-input instructor-radio" type="radio" name="instructor_id"
-                                       value="{{ instructor.id }}" id="instructor{{ instructor.id }}">
-                                <label class="form-check-label ms-2" for="instructor{{ instructor.id }}">Select</label>
+            <div class="row g-3 align-items-end">
+                <div class="col-md-6">
+                    <label class="form-label fw-semibold"><i class="fas fa-home me-1 text-primary"></i>Pickup Address</label>
+                    <input type="text" class="form-control" id="pickup-address" placeholder="e.g. 123 High Street, London">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label fw-semibold"><i class="fas fa-search-location me-1 text-info"></i>Radius</label>
+                    <select class="form-select" id="search-radius">
+                        <option value="5">5 km</option>
+                        <option value="10">10 km</option>
+                        <option value="15" selected>15 km</option>
+                        <option value="25">25 km</option>
+                        <option value="50">50 km</option>
+                    </select>
+                </div>
+                <div class="col-md-3 d-grid">
+                    <button type="button" class="btn btn-gradient rounded-pill" id="detect-btn">
+                        <i class="fas fa-crosshairs me-1"></i>Use My Location
+                    </button>
+                </div>
+            </div>
+            <div id="location-status" class="location-status mt-2 d-none">
+                <i class="fas fa-map-pin me-1 text-success"></i>
+                <span id="location-text"></span>
+            </div>
+
+            <!-- Instructor Results -->
+            <div id="instructor-results" class="mt-4" style="display:none;">
+                <h6 class="ds-section-title"><i class="fas fa-chalkboard-teacher"></i>Nearby Instructors</h6>
+                <div class="row g-3" id="instructor-list"></div>
+            </div>
+
+            <!-- Fallback: Show all instructors if no location -->
+            <div id="all-instructors" class="mt-4">
+                <h6 class="ds-section-title"><i class="fas fa-users"></i>All Instructors</h6>
+                <div class="row g-3">
+                    {% for inst in instructors %}
+                    <div class="col-md-6 col-lg-4">
+                        <div class="card h-100 border instructor-result" data-id="{{ inst.id }}"
+                             data-name="{{ inst.username }}"
+                             data-rate="{{ inst.instructor_profile.hourly_rate if inst.instructor_profile else 0 }}">
+                            <div class="card-body p-3 d-flex align-items-center gap-3">
+                                <div class="ds-avatar">{{ inst.username[0]|upper }}</div>
+                                <div class="flex-grow-1">
+                                    <h6 class="mb-0">{{ inst.username }}</h6>
+                                    <small class="text-muted">{{ inst.instructor_profile.bio|truncate(40) if inst.instructor_profile and inst.instructor_profile.bio else 'Driving instructor' }}</small>
+                                    {% if inst.instructor_profile and inst.instructor_profile.hourly_rate %}
+                                    <div><span class="badge bg-success bg-opacity-10 text-success mt-1">&pound;{{ inst.instructor_profile.hourly_rate }}/hr</span></div>
+                                    {% endif %}
+                                    {% if inst.instructor_profile and inst.instructor_profile.address %}
+                                    <small class="text-muted"><i class="fas fa-map-marker-alt me-1"></i>{{ inst.instructor_profile.address|truncate(30) }}</small>
+                                    {% endif %}
+                                </div>
                             </div>
                         </div>
                     </div>
+                    {% endfor %}
                 </div>
-                {% endfor %}
             </div>
-            {% for error in form.instructor_id.errors %}
-            <div class="text-danger mt-2"><small><i class="fas fa-exclamation-triangle me-1"></i>{{ error }}</small></div>
-            {% endfor %}
         </div>
     </div>
 
-    <!-- Step 2: Schedule Lesson -->
-    <div class="card border-0 mb-4">
-        <div class="card-header bg-transparent">
+    <!-- Step 2: Calendar Scheduling -->
+    <div class="card border-0 mb-4 step-card locked" id="step2-card">
+        <div class="card-header bg-transparent d-flex justify-content-between align-items-center">
             <h5 class="ds-section-title mb-0">
-                <span class="badge rounded-pill bg-primary me-2">2</span>Schedule Your Lesson
+                <span class="badge rounded-pill bg-primary me-2">2</span>
+                <i class="fas fa-calendar-alt me-1"></i>Pick a Time Slot
             </h5>
+            <div id="selected-instructor-badge" class="d-none">
+                <span class="badge rounded-pill bg-primary px-3 py-2">
+                    <i class="fas fa-user me-1"></i><span id="sel-inst-name"></span>
+                    <button type="button" class="btn-close btn-close-white ms-2" style="font-size:.6rem" id="change-instructor-btn"></button>
+                </span>
+            </div>
         </div>
         <div class="card-body">
-            <div class="row g-3">
+            <div class="slot-legend">
+                <span><span class="dot" style="background:#10b981"></span> Available</span>
+                <span><span class="dot" style="background:#94a3b8"></span> Booked</span>
+                <span><span class="dot" style="background:#4f46e5"></span> Your Selection</span>
+            </div>
+            <div class="row g-3 mb-3">
                 <div class="col-md-4">
-                    <label for="date" class="form-label fw-semibold">
-                        <i class="fas fa-calendar me-1 text-success"></i>Date
-                    </label>
-                    {{ form.date(class="form-control", type="date", id="date", min=today) }}
-                    {% for error in form.date.errors %}
-                    <div class="text-danger mt-1"><small><i class="fas fa-exclamation-triangle me-1"></i>{{ error }}</small></div>
-                    {% endfor %}
+                    <label class="form-label fw-semibold"><i class="fas fa-hourglass-half me-1 text-warning"></i>Duration</label>
+                    <select class="form-select" id="duration-select">
+                        <option value="1" selected>1 hour</option>
+                        <option value="2">2 hours</option>
+                        <option value="3">3 hours</option>
+                    </select>
                 </div>
-                <div class="col-md-4">
-                    <label for="time" class="form-label fw-semibold">
-                        <i class="fas fa-clock me-1 text-info"></i>Time
-                    </label>
-                    {{ form.time(class="form-control", type="time", id="time") }}
-                    {% for error in form.time.errors %}
-                    <div class="text-danger mt-1"><small><i class="fas fa-exclamation-triangle me-1"></i>{{ error }}</small></div>
-                    {% endfor %}
-                </div>
-                <div class="col-md-4">
-                    <label for="duration" class="form-label fw-semibold">
-                        <i class="fas fa-hourglass me-1 text-warning"></i>Duration
-                    </label>
-                    <div class="input-group">
-                        {{ form.duration(class="form-control", id="duration", min="1", max="8") }}
-                        <span class="input-group-text">hours</span>
-                    </div>
-                    {% for error in form.duration.errors %}
-                    <div class="text-danger mt-1"><small><i class="fas fa-exclamation-triangle me-1"></i>{{ error }}</small></div>
-                    {% endfor %}
-                    <small class="text-muted">Typical: 1-2 hours</small>
-                </div>
+            </div>
+            <div id="calendar-wrap"></div>
+            <div id="no-availability-msg" class="ds-empty-state d-none" style="padding:2rem">
+                <i class="fas fa-calendar-times"></i>
+                <h6>No availability set</h6>
+                <p class="small text-muted">This instructor hasn't configured their availability yet. Try another instructor.</p>
             </div>
         </div>
     </div>
 
-    <!-- Booking Summary -->
-    <div class="card border-0 mb-4" id="booking-summary" style="display: none;">
+    <!-- Step 3: Confirm Booking -->
+    <div class="card border-0 mb-4 step-card locked" id="step3-card">
+        <div class="card-header bg-transparent">
+            <h5 class="ds-section-title mb-0">
+                <span class="badge rounded-pill bg-primary me-2">3</span>
+                <i class="fas fa-check-circle me-1"></i>Confirm Your Booking
+            </h5>
+        </div>
         <div class="card-body p-4" style="background: var(--ds-gradient-subtle); border-radius: var(--ds-radius);">
-            <h6 class="ds-section-title"><i class="fas fa-receipt"></i>Booking Summary</h6>
-            <div class="row">
+            <div class="row g-3">
                 <div class="col-md-6">
-                    <p class="mb-1"><strong>Instructor:</strong> <span id="summary-instructor">Not selected</span></p>
-                    <p class="mb-1"><strong>Date:</strong> <span id="summary-date">Not selected</span></p>
+                    <div class="d-flex align-items-center gap-2 mb-3">
+                        <i class="fas fa-user fa-lg text-primary"></i>
+                        <div>
+                            <small class="text-muted d-block">Instructor</small>
+                            <strong id="confirm-instructor">-</strong>
+                        </div>
+                    </div>
+                    <div class="d-flex align-items-center gap-2 mb-3">
+                        <i class="fas fa-calendar fa-lg text-success"></i>
+                        <div>
+                            <small class="text-muted d-block">Date</small>
+                            <strong id="confirm-date">-</strong>
+                        </div>
+                    </div>
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="fas fa-map-marker-alt fa-lg text-danger"></i>
+                        <div>
+                            <small class="text-muted d-block">Pickup</small>
+                            <strong id="confirm-pickup">Not specified</strong>
+                        </div>
+                    </div>
                 </div>
                 <div class="col-md-6">
-                    <p class="mb-1"><strong>Time:</strong> <span id="summary-time">Not selected</span></p>
-                    <p class="mb-1"><strong>Duration:</strong> <span id="summary-duration">Not selected</span></p>
-                    <p class="mb-0"><strong>Estimated Cost:</strong> <span id="summary-cost" class="fw-bold" style="color: var(--ds-success);">£0</span></p>
+                    <div class="d-flex align-items-center gap-2 mb-3">
+                        <i class="fas fa-clock fa-lg text-info"></i>
+                        <div>
+                            <small class="text-muted d-block">Time</small>
+                            <strong id="confirm-time">-</strong>
+                        </div>
+                    </div>
+                    <div class="d-flex align-items-center gap-2 mb-3">
+                        <i class="fas fa-hourglass-half fa-lg text-warning"></i>
+                        <div>
+                            <small class="text-muted d-block">Duration</small>
+                            <strong id="confirm-duration">-</strong>
+                        </div>
+                    </div>
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="fas fa-pound-sign fa-lg" style="color:var(--ds-success)"></i>
+                        <div>
+                            <small class="text-muted d-block">Estimated Cost</small>
+                            <strong id="confirm-cost" style="color:var(--ds-success); font-size:1.2rem">-</strong>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
-
-    <!-- Action Buttons -->
-    <div class="d-flex justify-content-between">
-        <a href="{{ url_for('student.dashboard') }}" class="btn btn-outline-secondary rounded-pill px-4">
-            <i class="fas fa-arrow-left me-1"></i>Back
-        </a>
-        <button type="submit" class="btn btn-gradient rounded-pill px-5" id="book-btn">
-            <i class="fas fa-calendar-check me-2"></i>Book Lesson
-        </button>
+        <div class="card-footer bg-transparent border-0 d-flex justify-content-between pt-3">
+            <a href="{{ url_for('student.dashboard') }}" class="btn btn-outline-secondary rounded-pill px-4">
+                <i class="fas fa-arrow-left me-1"></i>Back
+            </a>
+            <button type="submit" class="btn btn-gradient rounded-pill px-5" id="book-btn" disabled>
+                <i class="fas fa-calendar-check me-2"></i>Confirm Booking
+            </button>
+        </div>
     </div>
 </form>
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    const form = document.getElementById('booking-form');
-    const bookBtn = document.getElementById('book-btn');
-    const summary = document.getElementById('booking-summary');
-    const instructorCards = document.querySelectorAll('.instructor-card');
+    const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
 
+    let userLat = null, userLng = null;
     let selectedInstructor = null;
+    let selectedSlot = null;
+    let calendar = null;
 
-    instructorCards.forEach(card => {
-        card.addEventListener('click', function() {
-            instructorCards.forEach(c => {
-                c.style.borderColor = '';
-                c.style.background = '';
-            });
-            this.style.borderColor = 'var(--ds-primary)';
-            this.style.borderWidth = '2px';
-            this.style.background = 'var(--ds-gradient-subtle)';
+    const step1 = document.getElementById('step1-card');
+    const step2 = document.getElementById('step2-card');
+    const step3 = document.getElementById('step3-card');
 
-            const radio = this.querySelector('.instructor-radio');
-            const rateEl = this.querySelector('.badge');
-            const rateText = rateEl ? rateEl.textContent : '\u00A30/hour';
+    // ── Location detection ─────────────────────────────
+    document.getElementById('detect-btn').addEventListener('click', function() {
+        const btn = this;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Detecting...';
+        btn.disabled = true;
 
-            selectedInstructor = {
-                id: this.dataset.instructorId,
-                name: this.querySelector('h6').textContent,
-                rate: parseFloat(rateText.replace(/[^\d.]/g, ''))
-            };
-            radio.checked = true;
-            updateSummary();
-        });
+        if (!navigator.geolocation) {
+            btn.innerHTML = '<i class="fas fa-crosshairs me-1"></i>Use My Location';
+            btn.disabled = false;
+            alert('Geolocation is not supported by your browser.');
+            return;
+        }
+        navigator.geolocation.getCurrentPosition(function(pos) {
+            userLat = pos.coords.latitude;
+            userLng = pos.coords.longitude;
+            document.getElementById('form-pickup-lat').value = userLat;
+            document.getElementById('form-pickup-lng').value = userLng;
+            document.getElementById('location-status').classList.remove('d-none');
+            document.getElementById('location-text').textContent =
+                'Location detected (' + userLat.toFixed(4) + ', ' + userLng.toFixed(4) + ')';
+            btn.innerHTML = '<i class="fas fa-check me-1"></i>Located';
+            btn.disabled = false;
+            fetchNearbyInstructors();
+        }, function(err) {
+            btn.innerHTML = '<i class="fas fa-crosshairs me-1"></i>Use My Location';
+            btn.disabled = false;
+            alert('Could not detect location: ' + err.message);
+        }, { timeout: 10000 });
     });
 
-    document.getElementById('date').addEventListener('change', updateSummary);
-    document.getElementById('time').addEventListener('change', updateSummary);
-    document.getElementById('duration').addEventListener('change', updateSummary);
-
-    function updateSummary() {
-        const date = document.getElementById('date').value;
-        const time = document.getElementById('time').value;
-        const duration = document.getElementById('duration').value;
-
-        if (selectedInstructor && date && time && duration) {
-            summary.style.display = 'block';
-            document.getElementById('summary-instructor').textContent = selectedInstructor.name;
-            document.getElementById('summary-date').textContent = new Date(date).toLocaleDateString();
-            document.getElementById('summary-time').textContent = time;
-            document.getElementById('summary-duration').textContent = duration + ' hour' + (duration != 1 ? 's' : '');
-            document.getElementById('summary-cost').textContent = '\u00A3' + (selectedInstructor.rate * duration).toFixed(2);
-        }
+    function fetchNearbyInstructors() {
+        if (!userLat || !userLng) return;
+        const radius = document.getElementById('search-radius').value;
+        fetch('/api/nearby-instructors?lat=' + userLat + '&lng=' + userLng + '&radius=' + radius, {
+            headers: { 'X-CSRFToken': csrfToken }
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (!data.instructors) return;
+            document.getElementById('all-instructors').style.display = 'none';
+            const wrap = document.getElementById('instructor-results');
+            const list = document.getElementById('instructor-list');
+            wrap.style.display = 'block';
+            list.innerHTML = '';
+            if (data.instructors.length === 0) {
+                list.innerHTML = '<div class="col-12"><div class="ds-empty-state" style="padding:1.5rem"><i class="fas fa-user-slash"></i><h6>No instructors found nearby</h6><p class="small">Try increasing the search radius.</p></div></div>';
+                return;
+            }
+            data.instructors.forEach(inst => {
+                const distHtml = inst.distance_km !== null
+                    ? '<span class="badge bg-info bg-opacity-10 text-info distance-badge"><i class="fas fa-route me-1"></i>' + inst.distance_km + ' km away</span>'
+                    : '<span class="badge bg-secondary bg-opacity-10 text-muted distance-badge"><i class="fas fa-map-marker-alt me-1"></i>No location</span>';
+                const card = document.createElement('div');
+                card.className = 'col-md-6 col-lg-4';
+                card.innerHTML =
+                    '<div class="card h-100 border instructor-result" data-id="' + inst.id + '" data-name="' + inst.username + '" data-rate="' + (inst.hourly_rate || 0) + '">' +
+                    '<div class="card-body p-3 d-flex align-items-center gap-3">' +
+                    '<div class="ds-avatar">' + inst.username[0].toUpperCase() + '</div>' +
+                    '<div class="flex-grow-1">' +
+                    '<h6 class="mb-0">' + inst.username + '</h6>' +
+                    '<small class="text-muted">' + (inst.bio || 'Driving instructor') + '</small>' +
+                    (inst.hourly_rate ? '<div><span class="badge bg-success bg-opacity-10 text-success mt-1">\u00a3' + inst.hourly_rate + '/hr</span></div>' : '') +
+                    distHtml +
+                    (inst.address ? '<br><small class="text-muted"><i class="fas fa-map-marker-alt me-1"></i>' + inst.address + '</small>' : '') +
+                    '</div></div></div>';
+                list.appendChild(card);
+            });
+            bindInstructorCards();
+        });
     }
 
-    form.addEventListener('submit', function() {
-        const orig = bookBtn.innerHTML;
-        bookBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Booking...';
-        bookBtn.disabled = true;
-        setTimeout(() => { bookBtn.innerHTML = orig; bookBtn.disabled = false; }, 3000);
+    document.getElementById('search-radius').addEventListener('change', fetchNearbyInstructors);
+
+    // ── Instructor selection ───────────────────────────
+    function bindInstructorCards() {
+        document.querySelectorAll('.instructor-result').forEach(card => {
+            card.addEventListener('click', function() {
+                document.querySelectorAll('.instructor-result').forEach(c => c.classList.remove('selected'));
+                this.classList.add('selected');
+                selectedInstructor = {
+                    id: this.dataset.id,
+                    name: this.dataset.name,
+                    rate: parseFloat(this.dataset.rate) || 0
+                };
+                document.getElementById('instructor_id').value = selectedInstructor.id;
+                document.getElementById('sel-inst-name').textContent = selectedInstructor.name;
+                document.getElementById('selected-instructor-badge').classList.remove('d-none');
+                step2.classList.remove('locked');
+                step3.classList.add('locked');
+                selectedSlot = null;
+                document.getElementById('book-btn').disabled = true;
+                loadCalendar();
+            });
+        });
+    }
+    bindInstructorCards();
+
+    document.getElementById('change-instructor-btn').addEventListener('click', function() {
+        selectedInstructor = null;
+        selectedSlot = null;
+        step2.classList.add('locked');
+        step3.classList.add('locked');
+        document.getElementById('selected-instructor-badge').classList.add('d-none');
+        document.querySelectorAll('.instructor-result').forEach(c => c.classList.remove('selected'));
+        if (calendar) { calendar.destroy(); calendar = null; }
     });
 
-    const today = new Date().toISOString().split('T')[0];
-    document.getElementById('date').setAttribute('min', today);
+    // ── Calendar ───────────────────────────────────────
+    function loadCalendar() {
+        const wrap = document.getElementById('calendar-wrap');
+        const noAvail = document.getElementById('no-availability-msg');
+        noAvail.classList.add('d-none');
+        wrap.innerHTML = '';
+        if (calendar) { calendar.destroy(); calendar = null; }
+
+        const calEl = document.createElement('div');
+        wrap.appendChild(calEl);
+
+        calendar = new FullCalendar.Calendar(calEl, {
+            initialView: 'timeGridWeek',
+            headerToolbar: {
+                left: 'prev,next today',
+                center: 'title',
+                right: 'timeGridWeek,timeGridDay'
+            },
+            slotMinTime: '06:00:00',
+            slotMaxTime: '21:00:00',
+            slotDuration: '01:00:00',
+            allDaySlot: false,
+            height: 520,
+            nowIndicator: true,
+            selectable: false,
+            validRange: { start: new Date().toISOString().split('T')[0] },
+            events: {
+                url: '/api/instructor-slots/' + selectedInstructor.id,
+                failure: function() {
+                    noAvail.classList.remove('d-none');
+                }
+            },
+            eventClick: function(info) {
+                if (!info.event.extendedProps.available) return;
+                const dur = parseInt(document.getElementById('duration-select').value) || 1;
+                const slotStart = info.event.start;
+                const slotEnd = new Date(slotStart.getTime() + dur * 3600000);
+
+                // Verify enough consecutive available slots
+                const events = calendar.getEvents();
+                let ok = true;
+                for (let h = 0; h < dur; h++) {
+                    const checkTime = new Date(slotStart.getTime() + h * 3600000).toISOString();
+                    const match = events.find(e => e.start.toISOString() === checkTime);
+                    if (!match || !match.extendedProps.available) { ok = false; break; }
+                }
+                if (!ok) {
+                    alert('Not enough consecutive available slots for ' + dur + ' hour(s). Try a shorter duration or different time.');
+                    return;
+                }
+
+                // Clear previous selection styling
+                events.forEach(e => {
+                    if (e.backgroundColor === '#4f46e5') {
+                        e.setProp('backgroundColor', '#10b981');
+                        e.setProp('title', 'Available');
+                    }
+                });
+
+                // Mark selected slots
+                for (let h = 0; h < dur; h++) {
+                    const checkTime = new Date(slotStart.getTime() + h * 3600000).toISOString();
+                    const match = events.find(e => e.start.toISOString() === checkTime);
+                    if (match) {
+                        match.setProp('backgroundColor', '#4f46e5');
+                        match.setProp('title', 'Selected');
+                    }
+                }
+
+                selectedSlot = { start: slotStart, duration: dur };
+                const dateStr = slotStart.toISOString().split('T')[0];
+                const timeStr = slotStart.toTimeString().slice(0, 5);
+
+                document.getElementById('form-date').value = dateStr;
+                document.getElementById('form-time').value = timeStr;
+                document.getElementById('form-duration').value = dur;
+                document.getElementById('form-pickup-address').value = document.getElementById('pickup-address').value;
+
+                // Unlock step 3
+                step3.classList.remove('locked');
+                document.getElementById('book-btn').disabled = false;
+                updateConfirmation();
+            },
+            loading: function(isLoading) {
+                if (!isLoading && calendar) {
+                    const events = calendar.getEvents();
+                    const hasAvail = events.some(e => e.extendedProps.available);
+                    if (events.length === 0 || !hasAvail) {
+                        noAvail.classList.remove('d-none');
+                    }
+                }
+            }
+        });
+        calendar.render();
+    }
+
+    document.getElementById('duration-select').addEventListener('change', function() {
+        if (selectedSlot) {
+            // Reset selection when duration changes
+            selectedSlot = null;
+            step3.classList.add('locked');
+            document.getElementById('book-btn').disabled = true;
+            if (calendar) {
+                calendar.getEvents().forEach(e => {
+                    if (e.backgroundColor === '#4f46e5') {
+                        e.setProp('backgroundColor', '#10b981');
+                        e.setProp('title', 'Available');
+                    }
+                });
+            }
+        }
+    });
+
+    // ── Confirmation ───────────────────────────────────
+    function updateConfirmation() {
+        if (!selectedInstructor || !selectedSlot) return;
+        const s = selectedSlot.start;
+        const dur = selectedSlot.duration;
+        document.getElementById('confirm-instructor').textContent = selectedInstructor.name;
+        document.getElementById('confirm-date').textContent = s.toLocaleDateString('en-GB', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+        document.getElementById('confirm-time').textContent = s.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+        document.getElementById('confirm-duration').textContent = dur + ' hour' + (dur !== 1 ? 's' : '');
+        document.getElementById('confirm-cost').textContent = '\u00a3' + (selectedInstructor.rate * dur).toFixed(2);
+        document.getElementById('confirm-pickup').textContent = document.getElementById('pickup-address').value || 'Not specified';
+    }
+
+    // ── Submit ─────────────────────────────────────────
+    document.getElementById('booking-form').addEventListener('submit', function(e) {
+        if (!selectedInstructor || !selectedSlot) {
+            e.preventDefault();
+            alert('Please select an instructor and time slot first.');
+            return;
+        }
+        const btn = document.getElementById('book-btn');
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Booking...';
+        btn.disabled = true;
+    });
 });
 </script>
 {% endblock %}

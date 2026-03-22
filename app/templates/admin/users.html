@@ -23,7 +23,7 @@
 <div class="card border-0 mb-3">
     <div class="card-body py-3">
         <div class="row g-2 align-items-center">
-            <div class="col-md-4">
+            <div class="col-md-5">
                 <div class="input-group">
                     <span class="input-group-text border-end-0"><i class="fas fa-search text-muted"></i></span>
                     <input type="text" class="form-control border-start-0" id="searchInput" placeholder="Search users...">
@@ -35,13 +35,6 @@
                     <option value="admin">Admin</option>
                     <option value="instructor">Instructor</option>
                     <option value="student">Student</option>
-                </select>
-            </div>
-            <div class="col-md-3">
-                <select class="form-select" id="statusFilter">
-                    <option value="">All Status</option>
-                    <option value="active">Active</option>
-                    <option value="inactive">Inactive</option>
                 </select>
             </div>
             <div class="col-md-2">
@@ -57,31 +50,25 @@
 <div class="card border-0">
     <div class="card-header d-flex justify-content-between align-items-center">
         <h5 class="ds-section-title mb-0"><i class="fas fa-users"></i>Users</h5>
-        <button class="btn btn-outline-secondary btn-sm rounded-pill" onclick="exportUsers()">
-            <i class="fas fa-download me-1"></i>Export
-        </button>
+        <small class="text-muted">{{ users|length }} total</small>
     </div>
     <div class="card-body p-0">
         <div class="table-responsive">
             <table class="table table-hover mb-0" id="usersTable">
                 <thead>
                     <tr>
-                        <th style="width:40px"><input type="checkbox" id="selectAll" class="form-check-input"></th>
                         <th>User</th>
                         <th>Email</th>
                         <th>Role</th>
-                        <th>Joined</th>
-                        <th>Status</th>
                         <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for user in users %}
-                    <tr class="user-row" data-role="{{ user.role }}" data-status="active">
-                        <td><input type="checkbox" class="form-check-input user-checkbox" value="{{ user.id }}"></td>
+                    <tr class="user-row" data-role="{{ user.role }}">
                         <td>
                             <div class="d-flex align-items-center gap-2">
-                                <div class="ds-avatar sm">{{ user.username[0]|upper }}</div>
+                                <div class="ds-avatar sm {% if user.role == 'admin' %}{% endif %}" {% if user.role == 'instructor' %}style="background:var(--ds-gradient);color:#fff"{% endif %}>{{ user.username[0]|upper }}</div>
                                 <div>
                                     <strong>{{ user.username }}</strong>
                                     <br><small class="text-muted">ID: {{ user.id }}</small>
@@ -91,37 +78,34 @@
                         <td>{{ user.email }}</td>
                         <td>
                             <span class="badge bg-{{ 'warning' if user.role == 'admin' else 'success' if user.role == 'instructor' else 'primary' }}">
-                                {{ user.role.title() }}
+                                {{ user.role|title }}
                             </span>
                         </td>
-                        <td>{{ user.created_at.strftime('%b %d, %Y') if user.created_at else 'N/A' }}</td>
                         <td>
-                            <div class="form-check form-switch">
-                                <input class="form-check-input" type="checkbox" id="status-{{ user.id }}" checked
-                                       onchange="toggleUserStatus({{ user.id }}, this.checked)">
-                            </div>
-                        </td>
-                        <td>
-                            <div class="btn-group" role="group">
-                                <button class="btn btn-sm btn-outline-primary rounded-pill" onclick="viewUser({{ user.id }})" title="View">
-                                    <i class="fas fa-eye"></i>
-                                </button>
-                                <button class="btn btn-sm btn-outline-info rounded-pill ms-1" onclick="editUser({{ user.id }})" title="Edit">
+                            <div class="d-flex gap-1 flex-wrap">
+                                <button class="btn btn-sm btn-outline-info rounded-pill" title="Edit"
+                                    data-bs-toggle="modal" data-bs-target="#editUserModal"
+                                    data-user-id="{{ user.id }}" data-username="{{ user.username }}"
+                                    data-email="{{ user.email }}" data-role="{{ user.role }}">
                                     <i class="fas fa-edit"></i>
                                 </button>
-                                <div class="dropdown d-inline ms-1">
-                                    <button class="btn btn-sm btn-outline-secondary rounded-pill dropdown-toggle" data-bs-toggle="dropdown">
-                                        <i class="fas fa-ellipsis-h"></i>
-                                    </button>
-                                    <ul class="dropdown-menu ds-dropdown">
-                                        <li><a class="dropdown-item" href="#" onclick="resetPassword({{ user.id }})">
-                                            <i class="fas fa-key me-2 text-warning"></i>Reset Password
-                                        </a></li>
-                                        <li><a class="dropdown-item text-danger" href="#" onclick="deleteUser({{ user.id }})">
-                                            <i class="fas fa-trash me-2"></i>Delete User
-                                        </a></li>
-                                    </ul>
-                                </div>
+                                <button class="btn btn-sm btn-outline-warning rounded-pill" title="Change Role"
+                                    data-bs-toggle="modal" data-bs-target="#changeRoleModal"
+                                    data-user-id="{{ user.id }}" data-username="{{ user.username }}" data-role="{{ user.role }}">
+                                    <i class="fas fa-user-tag"></i>
+                                </button>
+                                <button class="btn btn-sm btn-outline-secondary rounded-pill" title="Reset Password"
+                                    data-bs-toggle="modal" data-bs-target="#resetPasswordModal"
+                                    data-user-id="{{ user.id }}" data-username="{{ user.username }}">
+                                    <i class="fas fa-key"></i>
+                                </button>
+                                {% if user.id != current_user.id %}
+                                <button class="btn btn-sm btn-outline-danger rounded-pill" title="Delete"
+                                    data-bs-toggle="modal" data-bs-target="#deleteUserModal"
+                                    data-user-id="{{ user.id }}" data-username="{{ user.username }}">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                                {% endif %}
                             </div>
                         </td>
                     </tr>
@@ -130,62 +114,47 @@
             </table>
         </div>
     </div>
-    <div class="card-footer bg-transparent">
-        <div class="d-flex justify-content-between align-items-center">
-            <small class="text-muted">Showing {{ users|length }} of {{ users|length }} users</small>
-            <div class="btn-group btn-group-sm">
-                <button class="btn btn-outline-secondary rounded-start-pill" disabled><i class="fas fa-chevron-left"></i></button>
-                <button class="btn btn-primary">1</button>
-                <button class="btn btn-outline-secondary rounded-end-pill" disabled><i class="fas fa-chevron-right"></i></button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Bulk Actions -->
-<div class="mt-3" id="bulkActions" style="display: none;">
-    <div class="card border-0">
-        <div class="card-body py-2 d-flex justify-content-between align-items-center">
-            <span><strong id="selectedCount">0</strong> users selected</span>
-            <div class="d-flex gap-2">
-                <button class="btn btn-outline-warning btn-sm rounded-pill" onclick="bulkAction('deactivate')"><i class="fas fa-toggle-off me-1"></i>Deactivate</button>
-                <button class="btn btn-outline-danger btn-sm rounded-pill" onclick="bulkAction('delete')"><i class="fas fa-trash me-1"></i>Delete</button>
-                <button class="btn btn-outline-secondary btn-sm rounded-pill" onclick="clearSelection()"><i class="fas fa-times me-1"></i>Clear</button>
-            </div>
-        </div>
-    </div>
 </div>
 
 <!-- Add User Modal -->
 <div class="modal fade" id="addUserModal" tabindex="-1">
     <div class="modal-dialog">
-        <div class="modal-content" style="border-radius: var(--ds-radius-lg); border: none;">
-            <div class="modal-header" style="background: var(--ds-gradient); color: #fff; border-radius: var(--ds-radius-lg) var(--ds-radius-lg) 0 0;">
+        <div class="modal-content" style="border-radius:var(--ds-radius-lg);border:none">
+            <div class="modal-header" style="background:var(--ds-gradient);color:#fff;border-radius:var(--ds-radius-lg) var(--ds-radius-lg) 0 0">
                 <h5 class="modal-title"><i class="fas fa-user-plus me-2"></i>Add New User</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
-            <form id="addUserForm">
+            <form action="{{ url_for('admin.add_user') }}" method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <div class="modal-body p-4">
                     <div class="mb-3">
-                        <label for="username" class="form-label">Username *</label>
-                        <input type="text" class="form-control" id="username" required>
+                        <label class="form-label">Username *</label>
+                        <input type="text" class="form-control" name="username" required>
                     </div>
                     <div class="mb-3">
-                        <label for="email" class="form-label">Email *</label>
-                        <input type="email" class="form-control" id="email" required>
+                        <label class="form-label">Email *</label>
+                        <input type="email" class="form-control" name="email" required>
                     </div>
                     <div class="mb-3">
-                        <label for="role" class="form-label">Role *</label>
-                        <select class="form-select" id="role" required>
+                        <label class="form-label">Role *</label>
+                        <select class="form-select" name="role" id="addUserRole" required onchange="toggleRoleFields()">
                             <option value="">Select Role</option>
                             <option value="student">Student</option>
                             <option value="instructor">Instructor</option>
                             <option value="admin">Admin</option>
                         </select>
                     </div>
+                    <div class="mb-3" id="hourlyRateField" style="display:none">
+                        <label class="form-label">Hourly Rate (£)</label>
+                        <input type="number" step="0.01" class="form-control" name="hourly_rate" value="30.00">
+                    </div>
+                    <div class="mb-3" id="phoneField" style="display:none">
+                        <label class="form-label">Phone</label>
+                        <input type="text" class="form-control" name="phone" placeholder="Optional">
+                    </div>
                     <div class="mb-3">
-                        <label for="password" class="form-label">Password *</label>
-                        <input type="password" class="form-control" id="password" required>
+                        <label class="form-label">Password *</label>
+                        <input type="password" class="form-control" name="password" required minlength="6">
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -197,49 +166,174 @@
     </div>
 </div>
 
+<!-- Edit User Modal -->
+<div class="modal fade" id="editUserModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content" style="border-radius:var(--ds-radius-lg);border:none">
+            <div class="modal-header" style="background:var(--ds-gradient);color:#fff;border-radius:var(--ds-radius-lg) var(--ds-radius-lg) 0 0">
+                <h5 class="modal-title"><i class="fas fa-edit me-2"></i>Edit User</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="editUserForm" method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="modal-body p-4">
+                    <div class="mb-3">
+                        <label class="form-label">Username *</label>
+                        <input type="text" class="form-control" name="username" id="editUsername" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Email *</label>
+                        <input type="email" class="form-control" name="email" id="editEmail" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Role *</label>
+                        <select class="form-select" name="role" id="editRole" required>
+                            <option value="student">Student</option>
+                            <option value="instructor">Instructor</option>
+                            <option value="admin">Admin</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary rounded-pill" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-gradient rounded-pill px-4">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Change Role Modal -->
+<div class="modal fade" id="changeRoleModal" tabindex="-1">
+    <div class="modal-dialog modal-sm">
+        <div class="modal-content" style="border-radius:var(--ds-radius-lg);border:none">
+            <div class="modal-header" style="background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;border-radius:var(--ds-radius-lg) var(--ds-radius-lg) 0 0">
+                <h5 class="modal-title"><i class="fas fa-user-tag me-2"></i>Change Role</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="changeRoleForm" method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="modal-body p-4">
+                    <p class="text-muted">Change role for <strong id="changeRoleUsername"></strong></p>
+                    <select class="form-select" name="role" id="changeRoleSelect" required>
+                        <option value="student">Student</option>
+                        <option value="instructor">Instructor</option>
+                        <option value="admin">Admin</option>
+                    </select>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary rounded-pill" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-warning rounded-pill px-4">Change Role</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Reset Password Modal -->
+<div class="modal fade" id="resetPasswordModal" tabindex="-1">
+    <div class="modal-dialog modal-sm">
+        <div class="modal-content" style="border-radius:var(--ds-radius-lg);border:none">
+            <div class="modal-header" style="background:linear-gradient(135deg,#6b7280,#4b5563);color:#fff;border-radius:var(--ds-radius-lg) var(--ds-radius-lg) 0 0">
+                <h5 class="modal-title"><i class="fas fa-key me-2"></i>Reset Password</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="resetPasswordForm" method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="modal-body p-4">
+                    <p class="text-muted">Set new password for <strong id="resetPasswordUsername"></strong></p>
+                    <div class="mb-3">
+                        <label class="form-label">New Password *</label>
+                        <input type="password" class="form-control" name="new_password" required minlength="6">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary rounded-pill" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-secondary rounded-pill px-4">Reset Password</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Delete User Modal -->
+<div class="modal fade" id="deleteUserModal" tabindex="-1">
+    <div class="modal-dialog modal-sm">
+        <div class="modal-content" style="border-radius:var(--ds-radius-lg);border:none">
+            <div class="modal-header" style="background:linear-gradient(135deg,#ef4444,#dc2626);color:#fff;border-radius:var(--ds-radius-lg) var(--ds-radius-lg) 0 0">
+                <h5 class="modal-title"><i class="fas fa-exclamation-triangle me-2"></i>Delete User</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="deleteUserForm" method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="modal-body p-4">
+                    <div class="text-center mb-3">
+                        <i class="fas fa-user-times text-danger" style="font-size:2.5rem"></i>
+                    </div>
+                    <p class="text-center">Are you sure you want to permanently delete <strong id="deleteUsername"></strong>?</p>
+                    <div class="alert alert-warning py-2 small">
+                        <i class="fas fa-exclamation-circle me-1"></i>This will also delete all their lessons and payments. This action cannot be undone.
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary rounded-pill" data-bs-dismiss="modal">Keep User</button>
+                    <button type="submit" class="btn btn-danger rounded-pill px-4">Delete User</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    const searchInput = document.getElementById('searchInput');
-    const roleFilter = document.getElementById('roleFilter');
-    const statusFilter = document.getElementById('statusFilter');
-    const selectAll = document.getElementById('selectAll');
-    const userCheckboxes = document.querySelectorAll('.user-checkbox');
+// Role-specific fields on Add User form
+function toggleRoleFields() {
+    const role = document.getElementById('addUserRole').value;
+    document.getElementById('hourlyRateField').style.display = role === 'instructor' ? 'block' : 'none';
+    document.getElementById('phoneField').style.display = role === 'student' ? 'block' : 'none';
+}
 
-    searchInput.addEventListener('input', filterUsers);
-    roleFilter.addEventListener('change', filterUsers);
-    statusFilter.addEventListener('change', filterUsers);
-
-    selectAll.addEventListener('change', function() {
-        userCheckboxes.forEach(cb => cb.checked = this.checked);
-        updateBulkActions();
-    });
-
-    userCheckboxes.forEach(cb => {
-        cb.addEventListener('change', function() {
-            const checked = document.querySelectorAll('.user-checkbox:checked');
-            selectAll.checked = checked.length === userCheckboxes.length;
-            selectAll.indeterminate = checked.length > 0 && checked.length < userCheckboxes.length;
-            updateBulkActions();
-        });
-    });
-
-    document.getElementById('addUserForm').addEventListener('submit', function(e) {
-        e.preventDefault();
-        alert('Add user functionality coming soon!');
-        bootstrap.Modal.getInstance(document.getElementById('addUserModal')).hide();
-    });
+// Populate Edit User modal
+document.getElementById('editUserModal').addEventListener('show.bs.modal', function(e) {
+    const btn = e.relatedTarget;
+    const form = document.getElementById('editUserForm');
+    form.action = '/admin/users/' + btn.dataset.userId + '/edit';
+    document.getElementById('editUsername').value = btn.dataset.username;
+    document.getElementById('editEmail').value = btn.dataset.email;
+    document.getElementById('editRole').value = btn.dataset.role;
 });
+
+// Populate Change Role modal
+document.getElementById('changeRoleModal').addEventListener('show.bs.modal', function(e) {
+    const btn = e.relatedTarget;
+    document.getElementById('changeRoleForm').action = '/admin/users/' + btn.dataset.userId + '/change-role';
+    document.getElementById('changeRoleUsername').textContent = btn.dataset.username;
+    document.getElementById('changeRoleSelect').value = btn.dataset.role;
+});
+
+// Populate Reset Password modal
+document.getElementById('resetPasswordModal').addEventListener('show.bs.modal', function(e) {
+    const btn = e.relatedTarget;
+    document.getElementById('resetPasswordForm').action = '/admin/users/' + btn.dataset.userId + '/reset-password';
+    document.getElementById('resetPasswordUsername').textContent = btn.dataset.username;
+});
+
+// Populate Delete User modal
+document.getElementById('deleteUserModal').addEventListener('show.bs.modal', function(e) {
+    const btn = e.relatedTarget;
+    document.getElementById('deleteUserForm').action = '/admin/users/' + btn.dataset.userId + '/delete';
+    document.getElementById('deleteUsername').textContent = btn.dataset.username;
+});
+
+// Search and filter
+document.getElementById('searchInput').addEventListener('input', filterUsers);
+document.getElementById('roleFilter').addEventListener('change', filterUsers);
 
 function filterUsers() {
     const search = document.getElementById('searchInput').value.toLowerCase();
     const role = document.getElementById('roleFilter').value;
-    const status = document.getElementById('statusFilter').value;
-
     document.querySelectorAll('.user-row').forEach(row => {
         const text = row.textContent.toLowerCase();
-        const show = text.includes(search) &&
-                     (!role || row.dataset.role === role) &&
-                     (!status || row.dataset.status === status);
+        const show = text.includes(search) && (!role || row.dataset.role === role);
         row.style.display = show ? '' : 'none';
     });
 }
@@ -247,32 +341,7 @@ function filterUsers() {
 function clearFilters() {
     document.getElementById('searchInput').value = '';
     document.getElementById('roleFilter').value = '';
-    document.getElementById('statusFilter').value = '';
     filterUsers();
 }
-
-function updateBulkActions() {
-    const checked = document.querySelectorAll('.user-checkbox:checked');
-    document.getElementById('bulkActions').style.display = checked.length > 0 ? 'block' : 'none';
-    document.getElementById('selectedCount').textContent = checked.length;
-}
-
-function clearSelection() {
-    document.querySelectorAll('.user-checkbox').forEach(cb => cb.checked = false);
-    document.getElementById('selectAll').checked = false;
-    updateBulkActions();
-}
-
-function viewUser(id) { alert('View user ' + id + ' details coming soon!'); }
-function editUser(id) { alert('Edit user ' + id + ' coming soon!'); }
-function deleteUser(id) { if (confirm('Delete this user permanently?')) alert('Delete user ' + id + ' coming soon!'); }
-function resetPassword(id) { alert('Reset password for user ' + id + ' coming soon!'); }
-function toggleUserStatus(id, active) { console.log('Toggle user ' + id + ' to ' + (active ? 'active' : 'inactive')); }
-function bulkAction(action) {
-    const selected = Array.from(document.querySelectorAll('.user-checkbox:checked')).map(cb => cb.value);
-    if (selected.length && confirm('Are you sure you want to ' + action + ' ' + selected.length + ' user(s)?'))
-        alert('Bulk ' + action + ' coming soon!');
-}
-function exportUsers() { alert('Export functionality coming soon!'); }
 </script>
 {% endblock %}

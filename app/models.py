@@ -34,7 +34,20 @@ class InstructorProfile(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     bio = db.Column(db.String(500))
     hourly_rate = db.Column(db.Float)
+    address = db.Column(db.String(255))
+    latitude = db.Column(db.Float)
+    longitude = db.Column(db.Float)
+    service_radius_km = db.Column(db.Float, default=15.0)
     user = db.relationship('User', backref=db.backref('instructor_profile', uselist=False))
+
+
+class InstructorAvailability(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    instructor_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    day_of_week = db.Column(db.Integer)  # 0=Monday, 6=Sunday
+    start_time = db.Column(db.Time)
+    end_time = db.Column(db.Time)
+    instructor = db.relationship('User', backref='availability_slots')
 
 class StudentProfile(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -50,6 +63,9 @@ class Lesson(db.Model):
     time = db.Column(db.Time)
     duration = db.Column(db.Integer)  # minutes
     status = db.Column(db.String(20), default='confirmed')  # confirmed, cancelled, completed
+    pickup_address = db.Column(db.String(255))
+    pickup_lat = db.Column(db.Float)
+    pickup_lng = db.Column(db.Float)
 
     student = db.relationship('User', foreign_keys=[student_id], backref='student_lessons')
     instructor = db.relationship('User', foreign_keys=[instructor_id], backref='instructor_lessons')
