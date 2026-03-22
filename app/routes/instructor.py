@@ -7,6 +7,7 @@ from datetime import time as dt_time
 
 bp = Blueprint('instructor', __name__)
 
+
 @bp.route('/instructor/dashboard')
 @login_required
 def dashboard():
@@ -15,9 +16,10 @@ def dashboard():
         return redirect(url_for('main.index'))
     lessons = Lesson.query.filter_by(instructor_id=current_user.id).all()
     cancelled_lessons = [
-        l for l in lessons if l.status == 'cancelled'
+        les for les in lessons if les.status == 'cancelled'
     ]
     return render_template('instructor/dashboard.html', lessons=lessons, cancelled_lessons=cancelled_lessons)
+
 
 @bp.route('/instructor/profile', methods=['GET', 'POST'])
 @login_required
@@ -63,6 +65,7 @@ def profile():
     ).order_by(InstructorAvailability.day_of_week, InstructorAvailability.start_time).all()
     lessons = Lesson.query.filter_by(instructor_id=current_user.id).all()
     return render_template('instructor/profile.html', form=form, availability=availability, lessons=lessons)
+
 
 @bp.route('/instructor/cancel/<int:lesson_id>', methods=['POST'])
 @login_required

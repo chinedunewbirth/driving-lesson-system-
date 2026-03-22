@@ -1,9 +1,9 @@
 import unittest
-import pytest
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import Mock, patch
 from app import create_app
 from app.ai_chatbot import AIChatBot, IntentClassifier, ConversationManager
 from config import TestingConfig
+
 
 class TestIntentClassifier(unittest.TestCase):
     """Test intent classification functionality"""
@@ -43,6 +43,7 @@ class TestIntentClassifier(unittest.TestCase):
         intent, confidence = self.classifier.classify_intent(message)
         self.assertEqual(intent, 'unknown')
 
+
 class TestConversationManager(unittest.TestCase):
     """Test conversation management functionality"""
 
@@ -74,6 +75,7 @@ class TestConversationManager(unittest.TestCase):
 
         # Verify Redis setex was called
         self.redis_mock.setex.assert_called_once()
+
 
 class TestAIChatBot(unittest.TestCase):
     """Test AI chatbot functionality"""
@@ -151,6 +153,7 @@ class TestAIChatBot(unittest.TestCase):
         self.assertIn('booking', stats['intents'])
         self.assertIn('unknown', stats['intents'])
 
+
 class TestChatbotIntegration(unittest.TestCase):
     """Integration tests for chatbot routes"""
 
@@ -187,6 +190,7 @@ class TestChatbotIntegration(unittest.TestCase):
         self.assertEqual(response.status_code, 400)
         data = response.get_json()
         self.assertIn('error', data)
+
 
 if __name__ == '__main__':
     unittest.main()

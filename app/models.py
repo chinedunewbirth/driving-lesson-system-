@@ -3,6 +3,7 @@ from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime
 
+
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(64), index=True, unique=True)
@@ -25,9 +26,11 @@ class User(UserMixin, db.Model):
     def is_student(self):
         return self.role == 'student'
 
+
 @login.user_loader
 def load_user(id):
     return User.query.get(int(id))
+
 
 class InstructorProfile(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -49,11 +52,13 @@ class InstructorAvailability(db.Model):
     end_time = db.Column(db.Time)
     instructor = db.relationship('User', backref='availability_slots')
 
+
 class StudentProfile(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     phone = db.Column(db.String(20))
     user = db.relationship('User', backref=db.backref('student_profile', uselist=False))
+
 
 class Lesson(db.Model):
     id = db.Column(db.Integer, primary_key=True)

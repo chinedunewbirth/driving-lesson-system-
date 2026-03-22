@@ -11,11 +11,13 @@ chatbot = AIChatBot()
 
 logger = logging.getLogger(__name__)
 
+
 @bp.route('/chatbot', methods=['GET', 'POST'])
 def chatbot_page():
     """Render the chatbot interface"""
     form = ChatbotForm()
     return render_template('chatbot.html', form=form)
+
 
 @bp.route('/api/chat', methods=['POST'])
 def chat():
@@ -50,7 +52,11 @@ def chat():
         result = chatbot.get_response(user_message, user_id, use_ai=use_ai)
 
         # Log the interaction
-        logger.info(f"Chat interaction - User: {user_id}, Intent: {result.get('intent')}, Confidence: {result.get('confidence', 0):.2f}")
+        logger.info(
+            f"Chat interaction - User: {user_id}, "
+            f"Intent: {result.get('intent')}, "
+            f"Confidence: {result.get('confidence', 0):.2f}"
+        )
 
         return jsonify({
             'response': result['response'],
@@ -62,8 +68,12 @@ def chat():
         logger.error(f"Chat API error: {e}")
         return jsonify({
             'error': 'Internal server error',
-            'response': 'I apologize, but I\'m experiencing technical difficulties. Please try again later or contact support.'
+            'response': (
+                'I apologize, but I\'m experiencing technical difficulties. '
+                'Please try again later or contact support.'
+            )
         }), 500
+
 
 @bp.route('/api/chat/stats', methods=['GET'])
 def chat_stats():
@@ -77,6 +87,7 @@ def chat_stats():
     except Exception as e:
         logger.error(f"Error getting chat stats: {e}")
         return jsonify({'error': 'Could not retrieve statistics'}), 500
+
 
 def _is_rate_limited(user_id: str) -> bool:
     """Basic rate limiting - implement proper rate limiting in production"""

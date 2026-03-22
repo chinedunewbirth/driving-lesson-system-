@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
+from flask import Blueprint, render_template, request, redirect, url_for, flash
 from flask_login import login_required, current_user
 from app.models import User, Lesson, InstructorProfile, StudentProfile, Payment
 from app import db
@@ -30,17 +30,23 @@ def dashboard():
     payments = Payment.query.all()
 
     # Instructor performance stats
-    instructor_stats = db.session.query(
-        User.id, User.username,
-        InstructorProfile.hourly_rate,
-        func.count(Lesson.id).label('total_lessons'),
-        func.sum(db.case((Lesson.status == 'completed', 1), else_=0)).label('completed'),
-        func.sum(db.case((Lesson.status == 'cancelled', 1), else_=0)).label('cancelled'),
-        func.sum(db.case((Lesson.status == 'completed', Lesson.duration), else_=0)).label('total_minutes')
-    ).join(InstructorProfile, User.id == InstructorProfile.user_id
-    ).outerjoin(Lesson, User.id == Lesson.instructor_id
-    ).filter(User.role == 'instructor'
-    ).group_by(User.id, User.username, InstructorProfile.hourly_rate).all()
+    instructor_stats = (
+        db.session.query(
+            User.id, User.username,
+            InstructorProfile.hourly_rate,
+            func.count(Lesson.id).label('total_lessons'),
+            func.sum(db.case((Lesson.status == 'completed', 1), else_=0)).label('completed'),
+            func.sum(db.case((Lesson.status == 'cancelled', 1), else_=0)).label('cancelled'),
+            func.sum(db.case(
+                (Lesson.status == 'completed', Lesson.duration), else_=0
+            )).label('total_minutes')
+        )
+        .join(InstructorProfile, User.id == InstructorProfile.user_id)
+        .outerjoin(Lesson, User.id == Lesson.instructor_id)
+        .filter(User.role == 'instructor')
+        .group_by(User.id, User.username, InstructorProfile.hourly_rate)
+        .all()
+    )
 
     instructors = []
     for i in instructor_stats:
@@ -58,16 +64,22 @@ def dashboard():
         })
 
     # Student progress stats
-    student_stats = db.session.query(
-        User.id, User.username, User.email,
-        func.count(Lesson.id).label('total_lessons'),
-        func.sum(db.case((Lesson.status == 'completed', 1), else_=0)).label('completed'),
-        func.sum(db.case((Lesson.status == 'confirmed', 1), else_=0)).label('upcoming'),
-        func.sum(db.case((Lesson.status == 'cancelled', 1), else_=0)).label('cancelled'),
-        func.sum(db.case((Lesson.status == 'completed', Lesson.duration), else_=0)).label('total_minutes')
-    ).outerjoin(Lesson, User.id == Lesson.student_id
-    ).filter(User.role == 'student'
-    ).group_by(User.id, User.username, User.email).all()
+    student_stats = (
+        db.session.query(
+            User.id, User.username, User.email,
+            func.count(Lesson.id).label('total_lessons'),
+            func.sum(db.case((Lesson.status == 'completed', 1), else_=0)).label('completed'),
+            func.sum(db.case((Lesson.status == 'confirmed', 1), else_=0)).label('upcoming'),
+            func.sum(db.case((Lesson.status == 'cancelled', 1), else_=0)).label('cancelled'),
+            func.sum(db.case(
+                (Lesson.status == 'completed', Lesson.duration), else_=0
+            )).label('total_minutes')
+        )
+        .outerjoin(Lesson, User.id == Lesson.student_id)
+        .filter(User.role == 'student')
+        .group_by(User.id, User.username, User.email)
+        .all()
+    )
 
     students = []
     for s in student_stats:
@@ -129,12 +141,14 @@ def dashboard():
     ).group_by(Lesson.status).all()
     status_dist = {s: c for s, c in status_counts}
 
-    return render_template('admin/dashboard.html',
+    return render_template(
+        'admin/dashboard.html',
         users=users, lessons=lessons, payments=payments,
         instructors=instructors, students=students,
         total_revenue=total_revenue, today_lessons=today_lessons,
         monthly_data=monthly_data, monthly_revenue=monthly_revenue,
-        status_dist=status_dist)
+        status_dist=status_dist
+    )
 
 
 # ── User Management ────────────────────────────────────────
@@ -238,7 +252,9 @@ def delete_user(user_id):
         db.session.delete(user.student_profile)
 
     # Delete related lessons
-    Lesson.query.filter((Lesson.student_id == user_id) | (Lesson.instructor_id == user_id)).delete(synchronize_session=False)
+    Lesson.query.filter(
+        (Lesson.student_id == user_id) | (Lesson.instructor_id == user_id)
+    ).delete(synchronize_session=False)
     # Delete related payments
     Payment.query.filter_by(student_id=user_id).delete(synchronize_session=False)
 

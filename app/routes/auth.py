@@ -6,6 +6,7 @@ from app.forms import LoginForm, RegistrationForm
 
 bp = Blueprint('auth', __name__)
 
+
 @bp.route('/login', methods=['GET', 'POST'])
 def login():
     if current_user.is_authenticated:
@@ -23,10 +24,12 @@ def login():
         return redirect(next_page)
     return render_template('auth/login.html', title='Sign In', form=form)
 
+
 @bp.route('/logout')
 def logout():
     logout_user()
     return redirect(url_for('main.index'))
+
 
 @bp.route('/register', methods=['GET', 'POST'])
 def register():

@@ -6,11 +6,11 @@ from datetime import datetime, timedelta, timezone
 import re
 
 import openai
-import redis
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
 
 class ConversationManager:
     """Manages conversation context and history"""
@@ -25,7 +25,7 @@ class ConversationManager:
                 from flask import current_app
                 if hasattr(current_app, 'redis') and current_app.redis:
                     self.redis = current_app.redis
-            except:
+            except Exception:
                 pass
 
     def get_conversation_history(self, user_id: str) -> List[Dict]:
@@ -60,6 +60,7 @@ class ConversationManager:
             )
         except Exception as e:
             logger.error(f"Error saving conversation history: {e}")
+
 
 class IntentClassifier:
     """Simple rule-based intent classification"""
@@ -97,6 +98,7 @@ class IntentClassifier:
 
         return 'unknown', 0.0
 
+
 class AIChatBot:
     """AI-powered chatbot with OpenAI integration and rule-based fallback"""
 
@@ -110,16 +112,36 @@ class AIChatBot:
 
         # Fallback responses
         self.fallback_responses = {
-            'booking': "To book a lesson, log in to your student account and visit the 'Book Lesson' section. You can choose from available instructors and time slots.",
-            'pricing': "Our lesson prices vary by instructor. You can view hourly rates when booking a lesson or check instructor profiles.",
-            'cancellation': "You can cancel or reschedule lessons through your dashboard, subject to our 24-hour cancellation policy.",
-            'requirements': "For your first lesson, bring a valid learner's permit, wear comfortable clothing, and be ready to learn. Safety is our top priority!",
-            'contact': "You can reach our support team at support@drivingschool.com or call us at (555) 123-DRIVE.",
-            'unknown': "I'm here to help with driving lessons! Try asking about booking, pricing, requirements, or contact information."
+            'booking': (
+                "To book a lesson, log in to your student account and "
+                "visit the 'Book Lesson' section. You can choose from "
+                "available instructors and time slots."
+            ),
+            'pricing': (
+                "Our lesson prices vary by instructor. You can view "
+                "hourly rates when booking a lesson or check instructor profiles."
+            ),
+            'cancellation': (
+                "You can cancel or reschedule lessons through your "
+                "dashboard, subject to our 24-hour cancellation policy."
+            ),
+            'requirements': (
+                "For your first lesson, bring a valid learner's permit, "
+                "wear comfortable clothing, and be ready to learn. "
+                "Safety is our top priority!"
+            ),
+            'contact': (
+                "You can reach our support team at "
+                "support@drivingschool.com or call us at (555) 123-DRIVE."
+            ),
+            'unknown': (
+                "I'm here to help with driving lessons! Try asking about "
+                "booking, pricing, requirements, or contact information."
+            )
         }
 
     def get_response(self, message: str, user_id: Optional[str] = None,
-                    use_ai: bool = True) -> Dict[str, str]:
+                     use_ai: bool = True) -> Dict[str, str]:
         """
         Get a response to a user message
 
@@ -177,13 +199,16 @@ class AIChatBot:
         except Exception as e:
             logger.error(f"Error generating response: {e}")
             return {
-                'response': "I apologize, but I'm experiencing technical difficulties. Please contact support@drivingschool.com for assistance.",
+                'response': (
+                    "I apologize, but I'm experiencing technical difficulties. "
+                    "Please contact support@drivingschool.com for assistance."
+                ),
                 'intent': 'error',
                 'confidence': 0.0
             }
 
     def _get_ai_response(self, message: str, intent: str, context: str,
-                        confidence: float) -> Optional[str]:
+                         confidence: float) -> Optional[str]:
         """Get response from OpenAI API"""
         try:
             system_prompt = f"""You are a helpful AI assistant for a driving school.

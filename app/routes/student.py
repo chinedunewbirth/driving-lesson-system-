@@ -1,16 +1,17 @@
 from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify, current_app
 from flask_login import login_required, current_user
 from app import db
-from app.models import User, Lesson, StudentProfile, Payment, InstructorProfile, InstructorAvailability
+from app.models import User, Lesson, StudentProfile, Payment, InstructorAvailability
 from app.forms import BookLessonForm, StudentProfileForm
 from app.utils import haversine_distance
-from datetime import datetime, date, time as dt_time, timedelta
+from datetime import datetime, date, timedelta
 import stripe
 import logging
 
 logger = logging.getLogger(__name__)
 
 bp = Blueprint('student', __name__)
+
 
 @bp.route('/student/dashboard')
 @login_required
@@ -26,6 +27,7 @@ def dashboard():
         Lesson.status == 'confirmed'
     ).order_by(Lesson.date).all()
     return render_template('student/dashboard.html', lessons=lessons)
+
 
 @bp.route('/student/cancel/<int:lesson_id>', methods=['POST'])
 @login_required
@@ -233,6 +235,7 @@ def instructor_slots(instructor_id):
 
     return jsonify(events)
 
+
 @bp.route('/student/profile', methods=['GET', 'POST'])
 @login_required
 def profile():
@@ -264,11 +267,11 @@ def payments():
     if not current_user.is_student():
         flash('Access denied.')
         return redirect(url_for('main.index'))
-    
+
     student_payments = Payment.query.filter_by(
         student_id=current_user.id
     ).order_by(Payment.created_at.desc()).all()
-    
+
     return render_template('student/payments.html', payments=student_payments)
 
 
@@ -279,14 +282,14 @@ def pay_lesson(lesson_id):
     if not current_user.is_student():
         flash('Access denied.')
         return redirect(url_for('main.index'))
-    
+
     lesson = Lesson.query.get_or_404(lesson_id)
-    
+
     # Verify ownership
     if lesson.student_id != current_user.id:
         flash('Access denied.')
         return redirect(url_for('student.dashboard'))
-    
+
     # Check if already paid
     existing_payment = Payment.query.filter_by(
         lesson_id=lesson_id, status='completed'
@@ -294,14 +297,14 @@ def pay_lesson(lesson_id):
     if existing_payment:
         flash('This lesson has already been paid for.')
         return redirect(url_for('student.dashboard'))
-    
+
     lesson_price = current_app.config.get('LESSON_PRICE_GBP', 35.00)
     # Adjust price by duration (base price is per hour)
     hours = (lesson.duration or 60) / 60
     total_price = round(lesson_price * hours, 2)
-    
+
     stripe_key = current_app.config.get('STRIPE_PUBLIC_KEY', '')
-    
+
     return render_template(
         'student/pay_lesson.html',
         lesson=lesson,
@@ -316,25 +319,25 @@ def create_payment_intent(lesson_id):
     """Create a Stripe PaymentIntent for a lesson"""
     if not current_user.is_student():
         return jsonify({'error': 'Access denied'}), 403
-    
+
     lesson = Lesson.query.get_or_404(lesson_id)
     if lesson.student_id != current_user.id:
         return jsonify({'error': 'Access denied'}), 403
-    
+
     # Check if already paid
     existing_payment = Payment.query.filter_by(
         lesson_id=lesson_id, status='completed'
     ).first()
     if existing_payment:
         return jsonify({'error': 'Lesson already paid'}), 400
-    
+
     try:
         stripe.api_key = current_app.config.get('STRIPE_SECRET_KEY')
         lesson_price = current_app.config.get('LESSON_PRICE_GBP', 35.00)
         hours = (lesson.duration or 60) / 60
         total_price = round(lesson_price * hours, 2)
         amount_pence = int(total_price * 100)
-        
+
         intent = stripe.PaymentIntent.create(
             amount=amount_pence,
             currency='gbp',
@@ -343,9 +346,12 @@ def create_payment_intent(lesson_id):
                 'lesson_id': str(lesson_id),
                 'student_email': current_user.email
             },
-            description=f'Driving lesson - {lesson.date} with {lesson.instructor.username if lesson.instructor else "instructor"}'
+            description=(
+                f'Driving lesson - {lesson.date} with '
+                f'{lesson.instructor.username if lesson.instructor else "instructor"}'
+            )
         )
-        
+
         # Create pending payment record
         payment = Payment(
             student_id=current_user.id,
@@ -358,7 +364,7 @@ def create_payment_intent(lesson_id):
         )
         db.session.add(payment)
         db.session.commit()
-        
+
         return jsonify({
             'clientSecret': intent.client_secret
         })
@@ -377,17 +383,17 @@ def payment_success(lesson_id):
     if not current_user.is_student():
         flash('Access denied.')
         return redirect(url_for('main.index'))
-    
+
     # Update payment status
     payment = Payment.query.filter_by(
         lesson_id=lesson_id,
         student_id=current_user.id,
         status='pending'
     ).first()
-    
+
     if payment:
         payment.status = 'completed'
         db.session.commit()
-    
+
     flash('Payment successful! Your lesson is confirmed.', 'success')
     return redirect(url_for('student.dashboard'))
