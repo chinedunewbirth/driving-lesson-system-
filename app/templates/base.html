@@ -43,13 +43,28 @@
                             <li class="nav-item">
                                 <a class="nav-link ds-nav-link" href="{{ url_for('student.payments') }}">Payments</a>
                             </li>
+                            <li class="nav-item">
+                                <a class="nav-link ds-nav-link" href="{{ url_for('student.progress') }}">My Progress</a>
+                            </li>
                         {% elif current_user.is_instructor() %}
                             <li class="nav-item">
                                 <a class="nav-link ds-nav-link" href="{{ url_for('instructor.dashboard') }}">Dashboard</a>
                             </li>
+                            <li class="nav-item">
+                                <a class="nav-link ds-nav-link" href="{{ url_for('instructor.students') }}">My Students</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link ds-nav-link" href="{{ url_for('instructor.payouts') }}">Payouts</a>
+                            </li>
                         {% elif current_user.is_admin() %}
                             <li class="nav-item">
                                 <a class="nav-link ds-nav-link" href="{{ url_for('admin.dashboard') }}">Admin</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link ds-nav-link" href="{{ url_for('admin.refunds') }}">Refunds</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link ds-nav-link" href="{{ url_for('admin.payouts') }}">Payouts</a>
                             </li>
                         {% endif %}
                         <li class="nav-item">
@@ -65,9 +80,20 @@
                             <a class="btn btn-outline-primary btn-sm rounded-pill px-3" href="{{ url_for('auth.login') }}">Sign In</a>
                         </li>
                         <li class="nav-item">
-                            <a class="btn btn-primary btn-sm rounded-pill px-3" href="{{ url_for('auth.register') }}">Get Started</a>
+                            <a class="btn btn-outline-success btn-sm rounded-pill px-3" href="{{ url_for('auth.register', role='instructor') }}">
+                                <i class="fas fa-chalkboard-teacher me-1"></i>Become an Instructor or Student
+                            </a>
                         </li>
                     {% else %}
+                        <!-- Notification Bell -->
+                        <li class="nav-item me-2">
+                            <a class="nav-link position-relative" href="{{ url_for('main.notification_inbox') }}" title="Notifications">
+                                <i class="fas fa-bell fa-lg"></i>
+                                <span id="notif-badge" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger d-none" style="font-size: 0.6rem;">
+                                    0
+                                </span>
+                            </a>
+                        </li>
                         <li class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle ds-user-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown">
                                 <div class="ds-avatar-sm">{{ current_user.username[0]|upper }}</div>
@@ -82,6 +108,9 @@
                                 {% if current_user.is_student() or current_user.is_instructor() %}
                                 <li><a class="dropdown-item" href="{{ url_for(current_user.role + '.profile') }}">
                                     <i class="fas fa-user-circle me-2 text-primary"></i>My Profile
+                                </a></li>
+                                <li><a class="dropdown-item" href="{{ url_for('main.notification_settings') }}">
+                                    <i class="fas fa-bell me-2 text-warning"></i>Notifications
                                 </a></li>
                                 {% endif %}
                                 <li><a class="dropdown-item text-danger" href="{{ url_for('auth.logout') }}">
@@ -162,6 +191,25 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/moment.min.js"></script>
     <script src="{{ url_for('static', filename='js/chatbot.js') }}"></script>
+    {% if current_user.is_authenticated %}
+    <script>
+    (function(){
+        function updateBadge(){
+            fetch("{{ url_for('main.unread_count') }}")
+                .then(r=>r.json())
+                .then(d=>{
+                    var b=document.getElementById('notif-badge');
+                    if(b){
+                        if(d.count>0){b.textContent=d.count;b.classList.remove('d-none');}
+                        else{b.classList.add('d-none');}
+                    }
+                }).catch(()=>{});
+        }
+        updateBadge();
+        setInterval(updateBadge,30000);
+    })();
+    </script>
+    {% endif %}
     {% block scripts %}{% endblock %}
 </body>
 </html>

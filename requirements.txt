@@ -34,3 +34,7 @@ sentry-sdk[flask]>=1.38.0
 
 # Payment Processing
 stripe>=5.0.0
+
+# Notifications
+Flask-Mail>=0.9.1
+twilio>=8.10.0

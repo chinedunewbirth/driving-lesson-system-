@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+
+{% block title %}Lesson Feedback - DriveSmart{% endblock %}
+
+{% block content %}
+<!-- Page Header -->
+<div class="ds-page-header d-flex justify-content-between align-items-center flex-wrap gap-3">
+    <div>
+        <h2 class="mb-1">Lesson Feedback <span class="ds-greeting">📝</span></h2>
+        <p class="text-muted mb-0">Provide feedback for your student's session</p>
+    </div>
+    <a href="{{ url_for('instructor.dashboard') }}" class="btn btn-outline-primary rounded-pill px-3">
+        <i class="fas fa-arrow-left me-1"></i>Back to Dashboard
+    </a>
+</div>
+
+<!-- Lesson Summary -->
+<div class="card border-0 mb-4">
+    <div class="card-body">
+        <div class="row align-items-center g-3">
+            <div class="col-auto">
+                <div class="ds-avatar" style="background: var(--ds-primary);">
+                    {{ lesson.student.username[0]|upper }}
+                </div>
+            </div>
+            <div class="col">
+                <h5 class="mb-1">{{ lesson.student.username }}</h5>
+                <div class="text-muted">
+                    <i class="fas fa-calendar me-1"></i>{{ lesson.date.strftime('%B %d, %Y') if lesson.date else 'N/A' }}
+                    <span class="mx-2">&bull;</span>
+                    <i class="fas fa-clock me-1"></i>{{ lesson.time.strftime('%I:%M %p') if lesson.time else 'N/A' }}
+                    <span class="mx-2">&bull;</span>
+                    <i class="fas fa-hourglass-half me-1"></i>{{ ((lesson.duration or 0) / 60)|round(1) }} hours
+                </div>
+            </div>
+            <div class="col-auto">
+                <span class="badge bg-primary fs-6">Completed</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Feedback Form -->
+<div class="card border-0">
+    <div class="card-header">
+        <h5 class="ds-section-title mb-0"><i class="fas fa-star"></i>Session Feedback</h5>
+    </div>
+    <div class="card-body">
+        <form method="POST" action="">
+            {{ form.hidden_tag() }}
+
+            <!-- Star Rating -->
+            <div class="mb-4">
+                <label class="form-label fw-semibold">{{ form.rating.label.text }}</label>
+                <div class="d-flex gap-2 align-items-center flex-wrap">
+                    {% for value, label in form.rating.choices %}
+                    <div class="form-check form-check-inline p-0">
+                        <input class="btn-check" type="radio" name="rating"
+                               id="rating{{ value }}" value="{{ value }}"
+                               {% if form.rating.data == value %}checked{% endif %}>
+                        <label class="btn btn-outline-warning rounded-pill px-3 py-2" for="rating{{ value }}">
+                            {% for i in range(value|int) %}<i class="fas fa-star"></i>{% endfor %}
+                            <span class="ms-1 small">{{ label.split(' - ')[1] }}</span>
+                        </label>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% for error in form.rating.errors %}
+                <div class="text-danger small mt-1">{{ error }}</div>
+                {% endfor %}
+            </div>
+
+            <!-- Session Notes -->
+            <div class="mb-4">
+                <label class="form-label fw-semibold" for="notes">
+                    <i class="fas fa-clipboard me-1 text-primary"></i>{{ form.notes.label.text }}
+                </label>
+                {{ form.notes(class="form-control", rows=4, placeholder="Describe what was covered in this session...") }}
+                {% for error in form.notes.errors %}
+                <div class="text-danger small mt-1">{{ error }}</div>
+                {% endfor %}
+            </div>
+
+            <!-- Strengths -->
+            <div class="mb-4">
+                <label class="form-label fw-semibold" for="strengths">
+                    <i class="fas fa-thumbs-up me-1 text-success"></i>{{ form.strengths.label.text }}
+                </label>
+                {{ form.strengths(class="form-control", rows=3, placeholder="What did the student do well?") }}
+            </div>
+
+            <!-- Areas to Improve -->
+            <div class="mb-4">
+                <label class="form-label fw-semibold" for="areas_to_improve">
+                    <i class="fas fa-arrow-up me-1 text-warning"></i>{{ form.areas_to_improve.label.text }}
+                </label>
+                {{ form.areas_to_improve(class="form-control", rows=3, placeholder="What should the student focus on next?") }}
+            </div>
+
+            <!-- Quick Skill Update Link -->
+            <div class="p-3 rounded mb-4" style="background: var(--ds-surface-alt);">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <h6 class="mb-1"><i class="fas fa-tasks me-2 text-primary"></i>Update Skill Checklist</h6>
+                        <small class="text-muted">Update {{ lesson.student.username }}'s skill progress after this session</small>
+                    </div>
+                    <a href="{{ url_for('instructor.student_skills', student_id=lesson.student_id) }}"
+                       class="btn btn-outline-primary btn-sm rounded-pill">
+                        <i class="fas fa-clipboard-check me-1"></i>Skills
+                    </a>
+                </div>
+            </div>
+
+            <div class="d-flex gap-2">
+                {{ form.submit(class="btn btn-gradient rounded-pill px-4") }}
+                <a href="{{ url_for('instructor.dashboard') }}" class="btn btn-outline-secondary rounded-pill px-4">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

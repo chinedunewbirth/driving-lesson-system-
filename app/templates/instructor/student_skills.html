@@ -1,0 +1,207 @@
+{% extends "base.html" %}
+
+{% block title %}{{ student.username }}'s Skills - DriveSmart{% endblock %}
+
+{% block content %}
+<!-- Page Header -->
+<div class="ds-page-header d-flex justify-content-between align-items-center flex-wrap gap-3">
+    <div>
+        <h2 class="mb-1">Skill Checklist <span class="ds-greeting">📋</span></h2>
+        <p class="text-muted mb-0">Track <strong>{{ student.username }}</strong>'s driving skills progress</p>
+    </div>
+    <a href="{{ url_for('instructor.dashboard') }}" class="btn btn-outline-primary rounded-pill px-3">
+        <i class="fas fa-arrow-left me-1"></i>Back to Dashboard
+    </a>
+</div>
+
+<!-- Progress Overview -->
+{% set mastered = skills|selectattr('status','equalto','mastered')|list|length %}
+{% set competent = skills|selectattr('status','equalto','competent')|list|length %}
+{% set in_prog = skills|selectattr('status','equalto','in_progress')|list|length %}
+{% set not_started = skills|selectattr('status','equalto','not_started')|list|length %}
+{% set total = skills|length %}
+{% set pct = ((mastered + competent) / total * 100)|round|int if total > 0 else 0 %}
+
+<div class="row g-3 mb-4">
+    <div class="col-6 col-lg-3">
+        <div class="ds-stat-card">
+            <div class="ds-stat-icon success"><i class="fas fa-trophy"></i></div>
+            <div class="ds-stat-value">{{ mastered }}</div>
+            <div class="ds-stat-label">Mastered</div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="ds-stat-card">
+            <div class="ds-stat-icon primary"><i class="fas fa-check-circle"></i></div>
+            <div class="ds-stat-value">{{ competent }}</div>
+            <div class="ds-stat-label">Competent</div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="ds-stat-card">
+            <div class="ds-stat-icon warning"><i class="fas fa-spinner"></i></div>
+            <div class="ds-stat-value">{{ in_prog }}</div>
+            <div class="ds-stat-label">In Progress</div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="ds-stat-card">
+            <div class="ds-stat-icon accent"><i class="fas fa-percentage"></i></div>
+            <div class="ds-stat-value">{{ pct }}%</div>
+            <div class="ds-stat-label">Overall Progress</div>
+        </div>
+    </div>
+</div>
+
+<!-- Progress Bar -->
+<div class="card border-0 mb-4">
+    <div class="card-body">
+        <div class="d-flex justify-content-between mb-2">
+            <span class="fw-semibold">Overall Skill Completion</span>
+            <span class="text-muted">{{ mastered + competent }} / {{ total }} skills</span>
+        </div>
+        <div class="progress" style="height: 12px; border-radius: 6px;">
+            <div class="progress-bar bg-success" style="width: {{ (mastered / total * 100) if total > 0 else 0 }}%"
+                 title="Mastered: {{ mastered }}"></div>
+            <div class="progress-bar bg-primary" style="width: {{ (competent / total * 100) if total > 0 else 0 }}%"
+                 title="Competent: {{ competent }}"></div>
+            <div class="progress-bar bg-warning" style="width: {{ (in_prog / total * 100) if total > 0 else 0 }}%"
+                 title="In Progress: {{ in_prog }}"></div>
+        </div>
+        <div class="d-flex gap-3 mt-2 small">
+            <span><span class="badge bg-success">&nbsp;</span> Mastered</span>
+            <span><span class="badge bg-primary">&nbsp;</span> Competent</span>
+            <span><span class="badge bg-warning">&nbsp;</span> In Progress</span>
+            <span><span class="badge bg-secondary">&nbsp;</span> Not Started</span>
+        </div>
+    </div>
+</div>
+
+<!-- Skill Checklist -->
+<div class="card border-0">
+    <div class="card-header">
+        <h5 class="ds-section-title mb-0"><i class="fas fa-clipboard-check"></i>Driving Skills</h5>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th style="width: 35%">Skill</th>
+                        <th style="width: 25%">Status</th>
+                        <th style="width: 25%">Notes</th>
+                        <th style="width: 15%">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for skill in skills %}
+                    <tr id="skill-row-{{ skill.key }}">
+                        <td>
+                            <div class="d-flex align-items-center gap-2">
+                                {% if skill.status == 'mastered' %}
+                                    <i class="fas fa-trophy text-success"></i>
+                                {% elif skill.status == 'competent' %}
+                                    <i class="fas fa-check-circle text-primary"></i>
+                                {% elif skill.status == 'in_progress' %}
+                                    <i class="fas fa-spinner text-warning"></i>
+                                {% else %}
+                                    <i class="far fa-circle text-muted"></i>
+                                {% endif %}
+                                <span class="fw-medium">{{ skill.label }}</span>
+                            </div>
+                        </td>
+                        <td>
+                            <select class="form-select form-select-sm skill-status-select"
+                                    data-skill="{{ skill.key }}" style="max-width: 160px;">
+                                <option value="not_started" {% if skill.status == 'not_started' %}selected{% endif %}>
+                                    Not Started
+                                </option>
+                                <option value="in_progress" {% if skill.status == 'in_progress' %}selected{% endif %}>
+                                    In Progress
+                                </option>
+                                <option value="competent" {% if skill.status == 'competent' %}selected{% endif %}>
+                                    Competent
+                                </option>
+                                <option value="mastered" {% if skill.status == 'mastered' %}selected{% endif %}>
+                                    Mastered
+                                </option>
+                            </select>
+                        </td>
+                        <td>
+                            <input type="text" class="form-control form-control-sm skill-notes"
+                                   data-skill="{{ skill.key }}" value="{{ skill.notes }}"
+                                   placeholder="Add note...">
+                        </td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-primary rounded-pill save-skill-btn"
+                                    data-skill="{{ skill.key }}">
+                                <i class="fas fa-save me-1"></i>Save
+                            </button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.querySelectorAll('.save-skill-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+        const key = this.dataset.skill;
+        const row = document.getElementById('skill-row-' + key);
+        const status = row.querySelector('.skill-status-select').value;
+        const notes = row.querySelector('.skill-notes').value;
+        const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+
+        this.disabled = true;
+        this.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Saving...';
+
+        fetch('/instructor/student/{{ student.id }}/skills/update', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken
+            },
+            body: JSON.stringify({ skill_key: key, status: status, notes: notes })
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                this.innerHTML = '<i class="fas fa-check me-1"></i>Saved!';
+                this.classList.remove('btn-outline-primary');
+                this.classList.add('btn-success');
+                // Update icon
+                const iconCell = row.querySelector('td:first-child .fas, td:first-child .far');
+                if (iconCell) {
+                    iconCell.className = {
+                        'mastered': 'fas fa-trophy text-success',
+                        'competent': 'fas fa-check-circle text-primary',
+                        'in_progress': 'fas fa-spinner text-warning',
+                        'not_started': 'far fa-circle text-muted'
+                    }[status];
+                }
+                setTimeout(() => {
+                    this.innerHTML = '<i class="fas fa-save me-1"></i>Save';
+                    this.classList.remove('btn-success');
+                    this.classList.add('btn-outline-primary');
+                    this.disabled = false;
+                }, 1500);
+            } else {
+                alert('Error: ' + (data.error || 'Unknown error'));
+                this.innerHTML = '<i class="fas fa-save me-1"></i>Save';
+                this.disabled = false;
+            }
+        })
+        .catch(() => {
+            alert('Failed to save. Please try again.');
+            this.innerHTML = '<i class="fas fa-save me-1"></i>Save';
+            this.disabled = false;
+        });
+    });
+});
+</script>
+{% endblock %}

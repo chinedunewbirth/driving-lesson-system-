@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+
+{% block title %}Pay for Package - DriveSmart{% endblock %}
+
+{% block content %}
+<div class="ds-page-header">
+    <h2 class="mb-1">Complete Package Payment</h2>
+    <p class="text-muted mb-0">Pay for your block booking package</p>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card border-0 mb-4">
+            <div class="card-header">
+                <h5 class="ds-section-title mb-0"><i class="fas fa-box-open"></i>Package Summary</h5>
+            </div>
+            <div class="card-body">
+                <div class="d-flex flex-column gap-2">
+                    <div class="d-flex justify-content-between">
+                        <span class="text-muted">Instructor</span>
+                        <strong>{{ instructor.username }}</strong>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span class="text-muted">Lessons</span>
+                        <strong>{{ package.total_lessons }}</strong>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span class="text-muted">Discount</span>
+                        <strong class="text-success">{{ package.discount_percent }}% off</strong>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span class="text-muted">Price per lesson</span>
+                        <strong>&pound;{{ '%.2f'|format(package.price_per_lesson) }}</strong>
+                    </div>
+                    <hr>
+                    <div class="d-flex justify-content-between fs-5">
+                        <strong>Total</strong>
+                        <strong class="text-primary">&pound;{{ '%.2f'|format(package.total_price) }}</strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card border-0">
+            <div class="card-header">
+                <h5 class="ds-section-title mb-0"><i class="fas fa-credit-card"></i>Payment</h5>
+            </div>
+            <div class="card-body">
+                <div id="card-element" class="form-control mb-3" style="padding: 12px;"></div>
+                <div id="card-errors" class="text-danger small mb-3" role="alert"></div>
+                <button id="pay-btn" class="btn btn-gradient w-100 rounded-pill py-2" disabled>
+                    <i class="fas fa-lock me-2"></i>Pay &pound;{{ '%.2f'|format(package.total_price) }}
+                </button>
+                <div id="payment-spinner" class="text-center mt-3 d-none">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Processing...</span>
+                    </div>
+                    <p class="text-muted mt-2">Processing payment...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if stripe_public_key %}
+<script src="https://js.stripe.com/v3/"></script>
+<script>
+const stripe = Stripe('{{ stripe_public_key }}');
+const elements = stripe.elements();
+const card = elements.create('card', {
+    style: {
+        base: { fontSize: '16px', color: '#32325d' }
+    }
+});
+card.mount('#card-element');
+
+card.on('change', function(event) {
+    const displayError = document.getElementById('card-errors');
+    displayError.textContent = event.error ? event.error.message : '';
+    document.getElementById('pay-btn').disabled = !event.complete;
+});
+
+document.getElementById('pay-btn').addEventListener('click', async function() {
+    const btn = this;
+    const spinner = document.getElementById('payment-spinner');
+    btn.disabled = true;
+    spinner.classList.remove('d-none');
+
+    try {
+        const res = await fetch('/student/create-package-payment-intent/{{ package.id }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token() }}'
+            }
+        });
+        const data = await res.json();
+
+        if (data.error) {
+            document.getElementById('card-errors').textContent = data.error;
+            btn.disabled = false;
+            spinner.classList.add('d-none');
+            return;
+        }
+
+        const result = await stripe.confirmCardPayment(data.clientSecret, {
+            payment_method: { card: card }
+        });
+
+        if (result.error) {
+            document.getElementById('card-errors').textContent = result.error.message;
+            btn.disabled = false;
+            spinner.classList.add('d-none');
+        } else if (result.paymentIntent.status === 'succeeded') {
+            window.location.href = '/student/package-payment-success/{{ package.id }}';
+        }
+    } catch (err) {
+        document.getElementById('card-errors').textContent = 'Payment failed. Please try again.';
+        btn.disabled = false;
+        spinner.classList.add('d-none');
+    }
+});
+</script>
+{% else %}
+<div class="alert alert-warning mt-3">
+    <i class="fas fa-exclamation-triangle me-2"></i>Stripe is not configured. Please contact support.
+</div>
+{% endif %}
+{% endblock %}

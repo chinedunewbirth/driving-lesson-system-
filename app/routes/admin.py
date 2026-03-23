@@ -1,11 +1,20 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash
+from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app
 from flask_login import login_required, current_user
-from app.models import User, Lesson, InstructorProfile, StudentProfile, Payment
+from app.models import (
+    User, Lesson, InstructorProfile, StudentProfile, Payment,
+    LessonFeedback, SkillProgress, InstructorAvailability, NotificationPreference,
+    Refund, BookingPackage, InstructorPayout
+)
 from app import db
 from sqlalchemy import func, extract
 from datetime import datetime, date, timedelta
 from functools import wraps
 import calendar
+import stripe
+import logging
+from app.notifications import notify_user
+
+logger = logging.getLogger(__name__)
 
 bp = Blueprint('admin', __name__)
 
@@ -251,6 +260,22 @@ def delete_user(user_id):
     if user.student_profile:
         db.session.delete(user.student_profile)
 
+    # Delete related feedback
+    LessonFeedback.query.filter(
+        (LessonFeedback.instructor_id == user_id) | (LessonFeedback.student_id == user_id)
+    ).delete(synchronize_session=False)
+
+    # Delete related skill progress
+    SkillProgress.query.filter(
+        (SkillProgress.student_id == user_id) | (SkillProgress.instructor_id == user_id)
+    ).delete(synchronize_session=False)
+
+    # Delete related availability
+    InstructorAvailability.query.filter_by(instructor_id=user_id).delete(synchronize_session=False)
+
+    # Delete notification preferences
+    NotificationPreference.query.filter_by(user_id=user_id).delete(synchronize_session=False)
+
     # Delete related lessons
     Lesson.query.filter(
         (Lesson.student_id == user_id) | (Lesson.instructor_id == user_id)
@@ -380,3 +405,137 @@ def delete_lesson(lesson_id):
     db.session.commit()
     flash('Lesson deleted.', 'success')
     return redirect(url_for('admin.lessons'))
+
+
+# ── Refund Management ──────────────────────────────────────
+@bp.route('/admin/refunds')
+@admin_required
+def refunds():
+    """View all refund requests"""
+    all_refunds = Refund.query.order_by(Refund.created_at.desc()).all()
+    return render_template('admin/refunds.html', refunds=all_refunds)
+
+
+@bp.route('/admin/refunds/<int:refund_id>/process', methods=['POST'])
+@admin_required
+def process_refund(refund_id):
+    """Approve or reject a refund request"""
+    refund = Refund.query.get_or_404(refund_id)
+
+    if refund.status != 'pending':
+        flash('This refund has already been processed.', 'warning')
+        return redirect(url_for('admin.refunds'))
+
+    action = request.form.get('action', '').strip()
+    if action not in ('approved', 'rejected'):
+        flash('Invalid action.', 'danger')
+        return redirect(url_for('admin.refunds'))
+
+    refund.status = action
+    refund.processed_by_id = current_user.id
+    refund.processed_at = datetime.utcnow()
+
+    if action == 'approved':
+        # Attempt Stripe refund if payment has a PaymentIntent
+        payment = Payment.query.get(refund.payment_id)
+        if payment and payment.stripe_payment_intent_id:
+            try:
+                stripe.api_key = current_app.config.get('STRIPE_SECRET_KEY')
+                stripe_refund = stripe.Refund.create(
+                    payment_intent=payment.stripe_payment_intent_id,
+                    amount=int(refund.amount * 100)
+                )
+                refund.stripe_refund_id = stripe_refund.id
+                refund.status = 'processed'
+            except stripe.error.StripeError as e:
+                logger.error(f'Stripe refund error: {e}')
+                flash(f'Stripe refund failed: {e}. Refund marked as approved for manual processing.', 'warning')
+
+        if payment:
+            payment.status = 'refunded'
+
+    db.session.commit()
+
+    # Notify student
+    student = User.query.get(refund.student_id)
+    if student:
+        notify_user(student, 'refund_processed', **{
+            'student_name': student.username,
+            'amount': f'{refund.amount:.2f}',
+            'status': action,
+        })
+
+    flash(f'Refund {action} successfully.', 'success')
+    return redirect(url_for('admin.refunds'))
+
+
+# ── Payouts ────────────────────────────────────────────────
+@bp.route('/admin/payouts')
+@admin_required
+def payouts():
+    """View all instructor payout requests."""
+    status_filter = request.args.get('status', 'all')
+    query = InstructorPayout.query.order_by(InstructorPayout.created_at.desc())
+    if status_filter != 'all':
+        query = query.filter_by(status=status_filter)
+    all_payouts = query.all()
+
+    stats = {
+        'total_pending': db.session.query(func.coalesce(func.sum(InstructorPayout.amount), 0)).filter_by(status='pending').scalar(),
+        'total_completed': db.session.query(func.coalesce(func.sum(InstructorPayout.amount), 0)).filter_by(status='completed').scalar(),
+        'pending_count': InstructorPayout.query.filter_by(status='pending').count(),
+    }
+    return render_template('admin/payouts.html', payouts=all_payouts, stats=stats, status_filter=status_filter)
+
+
+@bp.route('/admin/payouts/<int:payout_id>/process', methods=['POST'])
+@admin_required
+def process_payout(payout_id):
+    """Approve/process or reject a payout request."""
+    payout = InstructorPayout.query.get_or_404(payout_id)
+
+    if payout.status != 'pending':
+        flash('This payout has already been processed.', 'warning')
+        return redirect(url_for('admin.payouts'))
+
+    action = request.form.get('action', '').strip()
+    if action not in ('completed', 'failed'):
+        flash('Invalid action.', 'danger')
+        return redirect(url_for('admin.payouts'))
+
+    payout.status = action
+    payout.processed_by_id = current_user.id
+    payout.processed_at = datetime.utcnow()
+    payout.notes = request.form.get('notes', '').strip()
+
+    if action == 'completed' and payout.stripe_connect_account_id:
+        try:
+            stripe.api_key = current_app.config.get('STRIPE_SECRET_KEY')
+            transfer = stripe.Transfer.create(
+                amount=int(payout.amount * 100),
+                currency='gbp',
+                destination=payout.stripe_connect_account_id,
+                description=f'DriveSmart payout #{payout.id}',
+            )
+            payout.stripe_transfer_id = transfer.id
+        except stripe.error.StripeError as e:
+            logger.error(f'Stripe transfer error: {e}')
+            flash(f'Stripe transfer failed: {e}. Payout marked as completed for manual processing.', 'warning')
+
+    db.session.commit()
+
+    # Notify instructor
+    instructor = User.query.get(payout.instructor_id)
+    if instructor:
+        notify_user(instructor, 'payout_processed', **{
+            'instructor_name': instructor.username,
+            'amount': f'{payout.amount:.2f}',
+            'status': action,
+            'period_start': str(payout.period_start or ''),
+            'period_end': str(payout.period_end or ''),
+            'lessons_count': payout.lessons_count or 0,
+            'notes': payout.notes or '',
+        })
+
+    flash(f'Payout {action} successfully.', 'success')
+    return redirect(url_for('admin.payouts'))

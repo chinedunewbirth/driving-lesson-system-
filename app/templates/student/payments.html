@@ -68,6 +68,7 @@
                         <th>Amount</th>
                         <th>Method</th>
                         <th>Status</th>
+                        <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -101,6 +102,17 @@
                                 <span class="badge rounded-pill bg-info"><i class="fas fa-undo me-1"></i>Refunded</span>
                             {% else %}
                                 <span class="badge rounded-pill bg-secondary">{{ payment.status|capitalize }}</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if payment.status == 'completed' %}
+                                <a href="{{ url_for('student.request_refund', payment_id=payment.id) }}" class="btn btn-sm btn-outline-warning rounded-pill">
+                                    <i class="fas fa-undo me-1"></i>Refund
+                                </a>
+                            {% elif payment.status == 'refunded' %}
+                                <span class="text-muted"><i class="fas fa-check me-1"></i>Refunded</span>
+                            {% else %}
+                                <span class="text-muted">—</span>
                             {% endif %}
                         </td>
                     </tr>

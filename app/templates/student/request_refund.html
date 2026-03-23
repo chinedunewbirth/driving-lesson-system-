@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+
+{% block title %}Request Refund - DriveSmart{% endblock %}
+
+{% block content %}
+<div class="ds-page-header d-flex justify-content-between align-items-center flex-wrap gap-3">
+    <div>
+        <h2 class="mb-1">Request Refund</h2>
+        <p class="text-muted mb-0">Submit a refund request for your payment</p>
+    </div>
+    <a href="{{ url_for('student.payments') }}" class="btn btn-outline-secondary rounded-pill px-3">
+        <i class="fas fa-arrow-left me-1"></i>Payments
+    </a>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <!-- Payment Info -->
+        <div class="card border-0 mb-4">
+            <div class="card-header">
+                <h5 class="ds-section-title mb-0"><i class="fas fa-receipt"></i>Payment Details</h5>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-sm-6">
+                        <div class="d-flex align-items-center gap-2 mb-2">
+                            <i class="fas fa-sterling-sign text-success"></i>
+                            <strong>Amount:</strong> &pound;{{ '%.2f'|format(payment.amount) }}
+                        </div>
+                        <div class="d-flex align-items-center gap-2 mb-2">
+                            <i class="fas fa-calendar text-primary"></i>
+                            <strong>Paid on:</strong> {{ payment.created_at.strftime('%b %d, %Y') if payment.created_at else 'N/A' }}
+                        </div>
+                    </div>
+                    <div class="col-sm-6">
+                        <div class="d-flex align-items-center gap-2 mb-2">
+                            <i class="fas fa-book text-info"></i>
+                            <strong>Lesson:</strong>
+                            {% if payment.lesson %}
+                                {{ payment.lesson.date.strftime('%b %d, %Y') if payment.lesson.date else 'N/A' }}
+                            {% else %}
+                                N/A
+                            {% endif %}
+                        </div>
+                        <div class="d-flex align-items-center gap-2 mb-2">
+                            <i class="fas fa-check-circle text-success"></i>
+                            <strong>Status:</strong> <span class="badge bg-success">{{ payment.status|capitalize }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Refund Form -->
+        <div class="card border-0">
+            <div class="card-header">
+                <h5 class="ds-section-title mb-0"><i class="fas fa-undo"></i>Refund Request</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    {{ form.hidden_tag() }}
+                    <div class="mb-3">
+                        <label for="reason" class="form-label">Reason for Refund <span class="text-danger">*</span></label>
+                        {{ form.reason(class="form-control", id="reason", rows="4", placeholder="Please explain why you are requesting a refund...") }}
+                        {% for error in form.reason.errors %}
+                            <div class="text-danger small mt-1">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    <div class="alert alert-warning py-2">
+                        <small><i class="fas fa-info-circle me-1"></i>Refund requests are reviewed by our admin team. You will be notified once a decision has been made.</small>
+                    </div>
+                    <div class="d-flex gap-2 mt-3">
+                        <a href="{{ url_for('student.payments') }}" class="btn btn-outline-secondary rounded-pill px-4">Cancel</a>
+                        {{ form.submit(class="btn btn-warning rounded-pill px-4") }}
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

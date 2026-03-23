@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+
+{% block title %}Block Booking - DriveSmart{% endblock %}
+
+{% block content %}
+<div class="ds-page-header d-flex justify-content-between align-items-center flex-wrap gap-3">
+    <div>
+        <h2 class="mb-1">Block Booking</h2>
+        <p class="text-muted mb-0">Save money by purchasing a package of lessons</p>
+    </div>
+    <a href="{{ url_for('student.dashboard') }}" class="btn btn-outline-secondary rounded-pill px-3">
+        <i class="fas fa-arrow-left me-1"></i>Dashboard
+    </a>
+</div>
+
+<!-- Pricing Tiers -->
+<div class="row g-4 mb-4">
+    {% for total, discount, label in tiers %}
+    {% set discounted = (lesson_price * (1 - discount / 100))|round(2) %}
+    {% set total_price = (discounted * total)|round(2) %}
+    {% set savings = (lesson_price * total - total_price)|round(2) %}
+    <div class="col-md-4">
+        <div class="card border-0 h-100 {{ 'border-primary border-2' if total == 10 else '' }}">
+            {% if total == 10 %}
+            <div class="card-header bg-primary text-white text-center py-2">
+                <small class="fw-bold"><i class="fas fa-star me-1"></i>Most Popular</small>
+            </div>
+            {% endif %}
+            <div class="card-body text-center p-4">
+                <h3 class="mb-1">{{ total }} Lessons</h3>
+                <div class="mb-3">
+                    <span class="badge bg-success bg-opacity-10 text-success fs-6 px-3 py-2">{{ discount }}% Off</span>
+                </div>
+                <div class="mb-2">
+                    <span class="text-muted text-decoration-line-through">&pound;{{ '%.2f'|format(lesson_price) }}/lesson</span>
+                </div>
+                <div class="mb-2">
+                    <span class="fs-4 fw-bold text-primary">&pound;{{ '%.2f'|format(discounted) }}</span><span class="text-muted">/lesson</span>
+                </div>
+                <div class="mb-3">
+                    <strong class="fs-5">&pound;{{ '%.2f'|format(total_price) }}</strong> total
+                </div>
+                <div class="text-success mb-3">
+                    <i class="fas fa-piggy-bank me-1"></i>Save &pound;{{ '%.2f'|format(savings) }}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Booking Form -->
+<div class="card border-0">
+    <div class="card-header">
+        <h5 class="ds-section-title mb-0"><i class="fas fa-shopping-cart"></i>Purchase Package</h5>
+    </div>
+    <div class="card-body">
+        <form method="POST">
+            {{ form.hidden_tag() }}
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label for="instructor_id" class="form-label">Select Instructor</label>
+                    <select name="instructor_id" id="instructor_id" class="form-select" required>
+                        <option value="">Choose an instructor...</option>
+                        {% for instructor in instructors %}
+                        <option value="{{ instructor.id }}">
+                            {{ instructor.username }}
+                            {% if instructor.instructor_profile and instructor.instructor_profile.hourly_rate %}
+                                – &pound;{{ '%.2f'|format(instructor.instructor_profile.hourly_rate) }}/hr
+                            {% endif %}
+                        </option>
+                        {% endfor %}
+                    </select>
+                    {% for error in form.instructor_id.errors %}
+                        <div class="text-danger small mt-1">{{ error }}</div>
+                    {% endfor %}
+                </div>
+                <div class="col-md-6">
+                    <label for="package_tier" class="form-label">Package</label>
+                    {{ form.package_tier(class="form-select", id="package_tier") }}
+                    {% for error in form.package_tier.errors %}
+                        <div class="text-danger small mt-1">{{ error }}</div>
+                    {% endfor %}
+                </div>
+            </div>
+            <div class="d-flex gap-2 mt-4">
+                <a href="{{ url_for('student.dashboard') }}" class="btn btn-outline-secondary rounded-pill px-4">Cancel</a>
+                {{ form.submit(class="btn btn-gradient rounded-pill px-4") }}
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

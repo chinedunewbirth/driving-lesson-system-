@@ -5,7 +5,7 @@ from typing import Dict, List, Optional, Tuple
 from datetime import datetime, timedelta, timezone
 import re
 
-import openai
+from openai import OpenAI
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -108,7 +108,8 @@ class AIChatBot:
         self.intent_classifier = IntentClassifier()
 
         # Configure OpenAI
-        openai.api_key = os.getenv('OPENAI_API_KEY')
+        api_key = os.getenv('OPENAI_API_KEY')
+        self.openai_client = OpenAI(api_key=api_key) if api_key else None
 
         # Fallback responses
         self.fallback_responses = {
@@ -166,7 +167,7 @@ class AIChatBot:
                     context = "\n".join([f"{msg['role']}: {msg['content']}" for msg in recent_messages])
 
             # Try AI response first if enabled
-            if use_ai and openai.api_key:
+            if use_ai and self.openai_client:
                 ai_response = self._get_ai_response(message, intent, context, confidence)
                 if ai_response:
                     response = ai_response
@@ -226,7 +227,7 @@ Guidelines:
 
 Respond naturally to: {message}"""
 
-            response = openai.ChatCompletion.create(
+            response = self.openai_client.chat.completions.create(
                 model="gpt-3.5-turbo",
                 messages=[
                     {"role": "system", "content": system_prompt},

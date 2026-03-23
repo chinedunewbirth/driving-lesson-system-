@@ -31,10 +31,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Send message to API
     function sendMessage(message) {
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
         fetch('/api/chat', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken,
             },
             body: JSON.stringify({ message: message })
         })

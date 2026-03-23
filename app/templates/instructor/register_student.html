@@ -56,6 +56,16 @@
                         </div>
                     </div>
 
+                    <div class="mb-3">
+                        <label class="form-label">{{ form.location.label.text }}</label>
+                        {{ form.location(class="form-control" + (" is-invalid" if form.location.errors else ""), placeholder="Enter student city or area") }}
+                        {% if form.location.errors %}
+                            <div class="invalid-feedback">
+                                {% for error in form.location.errors %}<span>{{ error }}</span>{% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+
                     <div class="d-grid mb-3">
                         {{ form.submit(class="btn btn-gradient btn-lg") }}
                     </div>

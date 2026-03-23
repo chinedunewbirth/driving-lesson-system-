@@ -1,0 +1,244 @@
+{% extends "base.html" %}
+
+{% block title %}{{ student.username }}'s Progress - DriveSmart{% endblock %}
+
+{% block content %}
+<!-- Page Header -->
+<div class="ds-page-header d-flex justify-content-between align-items-center flex-wrap gap-3">
+    <div>
+        <h2 class="mb-1">
+            <div class="d-flex align-items-center gap-3">
+                <div class="ds-avatar" style="width: 48px; height: 48px; font-size: 1.2rem;">
+                    {{ student.username[0]|upper }}
+                </div>
+                <div>
+                    {{ student.username }}'s Progress
+                    <p class="text-muted mb-0 fs-6 fw-normal">{{ student.email }}</p>
+                </div>
+            </div>
+        </h2>
+    </div>
+    <div class="d-flex gap-2 flex-wrap">
+        {% if student.student_profile and student.student_profile.test_passed %}
+        <span class="btn btn-success rounded-pill px-3 disabled">
+            <i class="fas fa-trophy me-1"></i>Passed – {{ student.student_profile.test_passed_date.strftime('%d %b %Y') if student.student_profile.test_passed_date else '' }}
+        </span>
+        {% else %}
+        <form method="POST" action="{{ url_for('instructor.mark_test_passed', student_id=student.id) }}" class="d-inline">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="btn btn-outline-success rounded-pill px-3"
+                    onclick="return confirm('Mark {{ student.username }} as passed their driving test?')">
+                <i class="fas fa-trophy me-1"></i>Mark as Passed
+            </button>
+        </form>
+        {% endif %}
+        <a href="{{ url_for('instructor.student_skills', student_id=student.id) }}"
+           class="btn btn-outline-info rounded-pill px-3">
+            <i class="fas fa-clipboard-check me-1"></i>Edit Skills
+        </a>
+        <a href="{{ url_for('instructor.students') }}" class="btn btn-outline-primary rounded-pill px-3">
+            <i class="fas fa-arrow-left me-1"></i>All Students
+        </a>
+    </div>
+</div>
+
+<!-- Overview Stats -->
+<div class="row g-3 mb-4">
+    <div class="col-6 col-lg-3">
+        <div class="ds-stat-card">
+            <div class="ds-stat-icon success"><i class="fas fa-check-circle"></i></div>
+            <div class="ds-stat-value">{{ completed_lessons|length }}</div>
+            <div class="ds-stat-label">Lessons Completed</div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="ds-stat-card">
+            <div class="ds-stat-icon primary"><i class="fas fa-clock"></i></div>
+            <div class="ds-stat-value">{{ total_hours }}</div>
+            <div class="ds-stat-label">Hours Driving</div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="ds-stat-card">
+            <div class="ds-stat-icon warning"><i class="fas fa-star"></i></div>
+            <div class="ds-stat-value">{{ avg_rating }}<small class="text-muted">/5</small></div>
+            <div class="ds-stat-label">Average Rating</div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="ds-stat-card">
+            <div class="ds-stat-icon accent"><i class="fas fa-trophy"></i></div>
+            <div class="ds-stat-value">{{ mastered + competent }}<small class="text-muted">/{{ total_skills }}</small></div>
+            <div class="ds-stat-label">Skills Achieved</div>
+        </div>
+    </div>
+</div>
+
+<!-- Skill Progress Section -->
+<div class="card border-0 mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="ds-section-title mb-0"><i class="fas fa-clipboard-check"></i>Skill Checklist</h5>
+        <div class="d-flex align-items-center gap-2">
+            <span class="badge bg-primary rounded-pill">{{ mastered + competent }} / {{ total_skills }} complete</span>
+            <a href="{{ url_for('instructor.student_skills', student_id=student.id) }}"
+               class="btn btn-sm btn-outline-primary rounded-pill">
+                <i class="fas fa-edit me-1"></i>Edit
+            </a>
+        </div>
+    </div>
+    <div class="card-body">
+        <!-- Progress Bar -->
+        {% set pct = ((mastered + competent) / total_skills * 100)|round|int if total_skills > 0 else 0 %}
+        <div class="d-flex justify-content-between mb-2">
+            <span class="fw-semibold">Overall Skill Progress</span>
+            <span class="text-muted">{{ pct }}%</span>
+        </div>
+        <div class="progress mb-3" style="height: 14px; border-radius: 7px;">
+            <div class="progress-bar bg-success" style="width: {{ (mastered / total_skills * 100) if total_skills > 0 else 0 }}%"
+                 title="Mastered: {{ mastered }}"></div>
+            <div class="progress-bar bg-primary" style="width: {{ (competent / total_skills * 100) if total_skills > 0 else 0 }}%"
+                 title="Competent: {{ competent }}"></div>
+            <div class="progress-bar bg-warning" style="width: {{ (in_progress / total_skills * 100) if total_skills > 0 else 0 }}%"
+                 title="In Progress: {{ in_progress }}"></div>
+        </div>
+        <div class="d-flex gap-3 mb-4 small">
+            <span><span class="badge bg-success">&nbsp;</span> Mastered ({{ mastered }})</span>
+            <span><span class="badge bg-primary">&nbsp;</span> Competent ({{ competent }})</span>
+            <span><span class="badge bg-warning">&nbsp;</span> In Progress ({{ in_progress }})</span>
+            <span><span class="badge bg-secondary">&nbsp;</span> Not Started ({{ total_skills - mastered - competent - in_progress }})</span>
+        </div>
+
+        <!-- Skills Grid -->
+        <div class="row g-2">
+            {% for skill in skills %}
+            <div class="col-md-6 col-lg-4">
+                <div class="d-flex align-items-center gap-2 p-2 rounded" style="background: var(--ds-surface-alt);">
+                    {% if skill.status == 'mastered' %}
+                        <span class="badge bg-success p-1"><i class="fas fa-crown"></i></span>
+                    {% elif skill.status == 'competent' %}
+                        <span class="badge bg-primary p-1"><i class="fas fa-check"></i></span>
+                    {% elif skill.status == 'in_progress' %}
+                        <span class="badge bg-warning p-1"><i class="fas fa-spinner"></i></span>
+                    {% else %}
+                        <span class="badge bg-secondary p-1"><i class="fas fa-minus"></i></span>
+                    {% endif %}
+                    <div class="flex-grow-1">
+                        <small class="fw-semibold d-block">{{ skill.label }}</small>
+                        {% if skill.notes %}
+                        <small class="text-muted">{{ skill.notes }}</small>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<!-- Feedback History -->
+<div class="card border-0 mb-4">
+    <div class="card-header">
+        <h5 class="ds-section-title mb-0"><i class="fas fa-comments"></i>Your Feedback History</h5>
+    </div>
+    <div class="card-body">
+        {% if feedbacks %}
+        {% for fb in feedbacks %}
+        <div class="p-3 rounded mb-3" style="background: var(--ds-surface-alt);">
+            <div class="d-flex justify-content-between align-items-start mb-2">
+                <div>
+                    <span class="fw-bold">Lesson on {{ fb.lesson.date.strftime('%b %d, %Y') if fb.lesson and fb.lesson.date else 'N/A' }}</span>
+                </div>
+                <div>
+                    {% for i in range(1, 6) %}
+                        {% if i <= fb.rating %}
+                            <i class="fas fa-star text-warning"></i>
+                        {% else %}
+                            <i class="far fa-star text-muted"></i>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+            </div>
+            {% if fb.notes %}
+            <p class="mb-1"><strong>Notes:</strong> {{ fb.notes }}</p>
+            {% endif %}
+            {% if fb.strengths %}
+            <p class="mb-1 text-success"><i class="fas fa-thumbs-up me-1"></i><strong>Strengths:</strong> {{ fb.strengths }}</p>
+            {% endif %}
+            {% if fb.areas_to_improve %}
+            <p class="mb-0 text-warning"><i class="fas fa-exclamation-circle me-1"></i><strong>To Improve:</strong> {{ fb.areas_to_improve }}</p>
+            {% endif %}
+            <small class="text-muted d-block mt-2">
+                <i class="fas fa-clock me-1"></i>{{ fb.created_at.strftime('%b %d, %Y at %I:%M %p') if fb.created_at else '' }}
+            </small>
+        </div>
+        {% endfor %}
+        {% else %}
+        <div class="text-center py-3">
+            <i class="fas fa-comment-slash text-muted mb-2" style="font-size: 2rem;"></i>
+            <p class="text-muted mb-0">No feedback given yet for this student.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Completed Lessons -->
+<div class="card border-0 mb-4">
+    <div class="card-header">
+        <h5 class="ds-section-title mb-0"><i class="fas fa-history"></i>Completed Lessons</h5>
+    </div>
+    <div class="card-body">
+        {% if completed_lessons %}
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Time</th>
+                        <th>Duration</th>
+                        <th>Feedback</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for lesson in completed_lessons %}
+                    <tr>
+                        <td>
+                            <strong>{{ lesson.date.strftime('%b %d, %Y') }}</strong>
+                            <br><small class="text-muted">{{ lesson.date.strftime('%A') }}</small>
+                        </td>
+                        <td>{{ lesson.time.strftime('%I:%M %p') if lesson.time else 'N/A' }}</td>
+                        <td>{{ ((lesson.duration or 0) / 60)|round(1) }} hrs</td>
+                        <td>
+                            {% if lesson.feedback %}
+                                {% for i in range(1, 6) %}
+                                    {% if i <= lesson.feedback.rating %}
+                                        <i class="fas fa-star text-warning small"></i>
+                                    {% else %}
+                                        <i class="far fa-star text-muted small"></i>
+                                    {% endif %}
+                                {% endfor %}
+                            {% else %}
+                                <span class="badge bg-secondary bg-opacity-25 text-secondary">Pending</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if not lesson.feedback %}
+                            <a href="{{ url_for('instructor.lesson_feedback', lesson_id=lesson.id) }}"
+                               class="btn btn-sm btn-outline-warning rounded-pill">
+                                <i class="fas fa-comment-dots me-1"></i>Give Feedback
+                            </a>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-3">
+            <p class="text-muted mb-0">No completed lessons yet.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

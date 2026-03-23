@@ -3,6 +3,7 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from flask_login import LoginManager
 from flask_wtf.csrf import CSRFProtect
+from flask_mail import Mail
 import redis
 import logging
 from config import Config
@@ -12,6 +13,7 @@ migrate = Migrate()
 login = LoginManager()
 login.login_view = 'auth.login'
 csrf = CSRFProtect()
+mail = Mail()
 
 
 def create_app(config_class=Config):
@@ -23,6 +25,7 @@ def create_app(config_class=Config):
     migrate.init_app(app, db)
     login.init_app(app)
     csrf.init_app(app)
+    mail.init_app(app)
 
     # Initialize Redis for conversation storage
     if app.config.get('REDIS_URL'):
@@ -62,6 +65,73 @@ def create_app(config_class=Config):
         db.session.add(admin_user)
         db.session.commit()
         print('Admin user created: admin@drivesmart.com / admin123')
+
+    # CLI command to send automated lesson reminders
+    @app.cli.command('send-reminders')
+    def send_reminders():
+        """Send automated reminders for upcoming lessons (24h and 1h before)."""
+        from app.models import Lesson, User
+        from app.notifications import notify_user
+        from datetime import datetime, timedelta
+
+        now = datetime.now()
+        window_24h = now + timedelta(hours=24)
+        window_1h = now + timedelta(hours=1)
+
+        sent_count = 0
+
+        # 24-hour reminders: lessons between now+23h and now+25h
+        lessons_24h = Lesson.query.filter(
+            Lesson.status == 'confirmed',
+            Lesson.reminder_24h_sent.is_(False),
+            Lesson.date.isnot(None),
+            Lesson.time.isnot(None),
+        ).all()
+
+        for lesson in lessons_24h:
+            lesson_dt = datetime.combine(lesson.date, lesson.time)
+            if now + timedelta(hours=23) <= lesson_dt <= now + timedelta(hours=25):
+                student = User.query.get(lesson.student_id)
+                instructor = User.query.get(lesson.instructor_id)
+                if student and instructor:
+                    notify_user(student, 'lesson_reminder', **{
+                        'recipient_name': student.username,
+                        'instructor_name': instructor.username,
+                        'date': lesson.date.strftime('%b %d, %Y'),
+                        'time': lesson.time.strftime('%I:%M %p'),
+                        'duration': round((lesson.duration or 60) / 60, 1),
+                        'pickup_address': lesson.pickup_address or '',
+                    })
+                    lesson.reminder_24h_sent = True
+                    sent_count += 1
+
+        # 1-hour reminders: lessons between now+30m and now+1h30m
+        lessons_1h = Lesson.query.filter(
+            Lesson.status == 'confirmed',
+            Lesson.reminder_1h_sent.is_(False),
+            Lesson.date.isnot(None),
+            Lesson.time.isnot(None),
+        ).all()
+
+        for lesson in lessons_1h:
+            lesson_dt = datetime.combine(lesson.date, lesson.time)
+            if now + timedelta(minutes=30) <= lesson_dt <= now + timedelta(minutes=90):
+                student = User.query.get(lesson.student_id)
+                instructor = User.query.get(lesson.instructor_id)
+                if student and instructor:
+                    notify_user(student, 'lesson_reminder', **{
+                        'recipient_name': student.username,
+                        'instructor_name': instructor.username,
+                        'date': lesson.date.strftime('%b %d, %Y'),
+                        'time': lesson.time.strftime('%I:%M %p'),
+                        'duration': round((lesson.duration or 60) / 60, 1),
+                        'pickup_address': lesson.pickup_address or '',
+                    })
+                    lesson.reminder_1h_sent = True
+                    sent_count += 1
+
+        db.session.commit()
+        print(f'Sent {sent_count} lesson reminder(s).')
 
     # Health check endpoint
     @app.route('/health')

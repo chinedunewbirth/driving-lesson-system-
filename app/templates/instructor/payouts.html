@@ -1,0 +1,127 @@
+{% extends "base.html" %}
+
+{% block title %}Payouts - DriveSmart{% endblock %}
+
+{% block content %}
+<!-- Page Header -->
+<div class="ds-page-header d-flex justify-content-between align-items-center flex-wrap gap-3">
+    <div>
+        <h2 class="mb-1">My Earnings & Payouts <span class="ds-greeting">💰</span></h2>
+        <p class="text-muted mb-0">Track your earnings and request withdrawals</p>
+    </div>
+    <a href="{{ url_for('instructor.dashboard') }}" class="btn btn-outline-primary rounded-pill px-3">
+        <i class="fas fa-arrow-left me-1"></i>Dashboard
+    </a>
+</div>
+
+<!-- Earnings Cards -->
+<div class="row g-3 mb-4">
+    <div class="col-6 col-lg-3">
+        <div class="ds-stat-card">
+            <div class="ds-stat-icon success"><i class="fas fa-pound-sign"></i></div>
+            <div class="ds-stat-value" style="color: var(--ds-success);">£{{ "%.2f"|format(total_earned) }}</div>
+            <div class="ds-stat-label">Total Earned</div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="ds-stat-card">
+            <div class="ds-stat-icon primary"><i class="fas fa-wallet"></i></div>
+            <div class="ds-stat-value" style="color: var(--ds-primary);">£{{ "%.2f"|format(available_balance) }}</div>
+            <div class="ds-stat-label">Available Balance</div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="ds-stat-card">
+            <div class="ds-stat-icon warning"><i class="fas fa-hourglass-half"></i></div>
+            <div class="ds-stat-value">£{{ "%.2f"|format(pending_amount) }}</div>
+            <div class="ds-stat-label">Pending Payouts</div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="ds-stat-card">
+            <div class="ds-stat-icon accent"><i class="fas fa-check-double"></i></div>
+            <div class="ds-stat-value">£{{ "%.2f"|format(total_paid_out) }}</div>
+            <div class="ds-stat-label">Total Paid Out</div>
+        </div>
+    </div>
+</div>
+
+<!-- Request Payout -->
+{% if available_balance >= 1 %}
+<div class="card border-0 mb-4" style="border-left: 4px solid var(--ds-success) !important;">
+    <div class="card-body d-flex justify-content-between align-items-center flex-wrap gap-3">
+        <div>
+            <h5 class="mb-1"><i class="fas fa-money-bill-wave me-2 text-success"></i>Ready to Withdraw</h5>
+            <p class="text-muted mb-0">You have <strong>£{{ "%.2f"|format(available_balance) }}</strong> available for withdrawal.</p>
+        </div>
+        <form method="POST" action="{{ url_for('instructor.request_payout') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="btn btn-gradient rounded-pill px-4"
+                    onclick="return confirm('Request payout of £{{ '%.2f'|format(available_balance) }}?')">
+                <i class="fas fa-paper-plane me-1"></i>Request Payout
+            </button>
+        </form>
+    </div>
+</div>
+{% endif %}
+
+<!-- Payout History -->
+<div class="card border-0">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="ds-section-title mb-0"><i class="fas fa-history"></i>Payout History</h5>
+        <span class="badge bg-primary rounded-pill">{{ payouts|length }}</span>
+    </div>
+    {% if payouts %}
+    <div class="table-responsive">
+        <table class="table table-hover mb-0">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Amount</th>
+                    <th>Lessons</th>
+                    <th>Period</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for p in payouts %}
+                <tr>
+                    <td>{{ p.created_at.strftime('%b %d, %Y') }}</td>
+                    <td class="fw-bold">£{{ "%.2f"|format(p.amount) }}</td>
+                    <td>{{ p.lessons_count or '-' }}</td>
+                    <td>
+                        {% if p.period_start and p.period_end %}
+                            {{ p.period_start.strftime('%b %d') }} - {{ p.period_end.strftime('%b %d, %Y') }}
+                        {% elif p.period_end %}
+                            Up to {{ p.period_end.strftime('%b %d, %Y') }}
+                        {% else %}
+                            -
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if p.status == 'pending' %}
+                            <span class="badge bg-warning text-dark rounded-pill">Pending</span>
+                        {% elif p.status == 'processing' %}
+                            <span class="badge bg-info rounded-pill">Processing</span>
+                        {% elif p.status == 'completed' %}
+                            <span class="badge bg-success rounded-pill">Completed</span>
+                        {% elif p.status == 'failed' %}
+                            <span class="badge bg-danger rounded-pill">Failed</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="card-body text-center py-5">
+        <div class="ds-stat-icon warning mx-auto mb-3" style="width: 64px; height: 64px;">
+            <i class="fas fa-piggy-bank fa-lg"></i>
+        </div>
+        <h5 class="text-muted">No payouts yet</h5>
+        <p class="text-muted small mb-0">Complete lessons and request your first payout!</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

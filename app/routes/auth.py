@@ -3,6 +3,7 @@ from flask_login import login_user, logout_user, current_user
 from app import db
 from app.models import User, InstructorProfile, StudentProfile
 from app.forms import LoginForm, RegistrationForm
+from app.notifications import notify_user
 
 bp = Blueprint('auth', __name__)
 
@@ -36,6 +37,8 @@ def register():
     if current_user.is_authenticated:
         return redirect(url_for('main.index'))
     form = RegistrationForm()
+    if request.method == 'GET' and request.args.get('role') in ('instructor', 'student'):
+        form.role.data = request.args.get('role')
     if form.validate_on_submit():
         try:
             user = User(username=form.username.data, email=form.email.data, role=form.role.data)
@@ -44,15 +47,27 @@ def register():
             db.session.commit()
 
             if form.role.data == 'instructor':
-                profile = InstructorProfile(user_id=user.id)
+                profile = InstructorProfile(user_id=user.id, address=form.location.data)
                 db.session.add(profile)
                 db.session.commit()
             elif form.role.data == 'student':
-                profile = StudentProfile(user_id=user.id)
+                profile = StudentProfile(user_id=user.id, address=form.location.data)
                 db.session.add(profile)
                 db.session.commit()
 
             flash('Congratulations, you are now registered!')
+
+            # Send welcome notification (non-blocking — don't roll back user on failure)
+            try:
+                notify_user(user, 'welcome', **{
+                    'username': user.username,
+                    'role': form.role.data.title(),
+                    'email': user.email,
+                    'login_url': url_for('auth.login', _external=True),
+                })
+            except Exception:
+                pass  # Notification failure should not affect registration
+
             return redirect(url_for('auth.login'))
         except Exception as e:
             db.session.rollback()

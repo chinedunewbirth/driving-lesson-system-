@@ -1,0 +1,173 @@
+{% extends "base.html" %}
+
+{% block title %}My Students - DriveSmart{% endblock %}
+
+{% block content %}
+<!-- Page Header -->
+<div class="ds-page-header d-flex justify-content-between align-items-center flex-wrap gap-3">
+    <div>
+        <h2 class="mb-1">My Students <span class="ds-greeting">👥</span></h2>
+        <p class="text-muted mb-0">Track your students' progress and skill development</p>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="{{ url_for('instructor.register_student') }}" class="btn btn-gradient rounded-pill px-4">
+            <i class="fas fa-user-plus me-2"></i>Register Student
+        </a>
+        <a href="{{ url_for('instructor.dashboard') }}" class="btn btn-outline-primary rounded-pill px-3">
+            <i class="fas fa-arrow-left me-1"></i>Dashboard
+        </a>
+    </div>
+</div>
+
+<!-- Summary Stats -->
+<div class="row g-3 mb-4">
+    <div class="col-6 col-lg-3">
+        <div class="ds-stat-card">
+            <div class="ds-stat-icon primary"><i class="fas fa-users"></i></div>
+            <div class="ds-stat-value">{{ students_data|length }}</div>
+            <div class="ds-stat-label">Total Students</div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="ds-stat-card">
+            <div class="ds-stat-icon success"><i class="fas fa-check-circle"></i></div>
+            <div class="ds-stat-value">
+                {% set total_completed = students_data|sum(attribute='total_lessons') %}
+                {{ total_completed }}
+            </div>
+            <div class="ds-stat-label">Total Lessons Given</div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="ds-stat-card">
+            <div class="ds-stat-icon warning"><i class="fas fa-star"></i></div>
+            <div class="ds-stat-value">
+                {% set rated = students_data|selectattr('avg_rating', '>', 0)|list %}
+                {% if rated %}
+                    {{ (rated|sum(attribute='avg_rating') / rated|length)|round(1) }}
+                {% else %}
+                    0
+                {% endif %}
+                <small class="text-muted">/5</small>
+            </div>
+            <div class="ds-stat-label">Avg Rating</div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="ds-stat-card">
+            <div class="ds-stat-icon accent"><i class="fas fa-trophy"></i></div>
+            <div class="ds-stat-value">
+                {% set avg_pct = (students_data|sum(attribute='skill_pct') / students_data|length)|round|int if students_data else 0 %}
+                {{ avg_pct }}%
+            </div>
+            <div class="ds-stat-label">Avg Skill Progress</div>
+        </div>
+    </div>
+</div>
+
+<!-- Student Cards -->
+{% if students_data %}
+<div class="row g-3">
+    {% for data in students_data %}
+    <div class="col-md-6 col-xl-4">
+        <div class="card border-0 h-100" style="transition: transform 0.2s; cursor: pointer;"
+             onmouseover="this.style.transform='translateY(-4px)'" onmouseout="this.style.transform='none'">
+            <div class="card-body">
+                <!-- Student Header -->
+                <div class="d-flex align-items-center gap-3 mb-3">
+                    <div class="ds-avatar" style="width: 50px; height: 50px; font-size: 1.2rem;">
+                        {{ data.student.username[0]|upper }}
+                    </div>
+                    <div class="flex-grow-1">
+                        <h6 class="mb-0 fw-bold">{{ data.student.username }}</h6>
+                        <small class="text-muted">{{ data.student.email }}</small>
+                    </div>
+                    {% if data.avg_rating > 0 %}
+                    <div class="text-end">
+                        <span class="badge bg-warning bg-opacity-10 text-warning px-2 py-1">
+                            <i class="fas fa-star me-1"></i>{{ data.avg_rating }}
+                        </span>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- Skill Progress Bar -->
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between mb-1">
+                        <small class="fw-semibold">Skill Progress</small>
+                        <small class="text-muted">{{ data.skill_pct }}%</small>
+                    </div>
+                    <div class="progress" style="height: 10px; border-radius: 5px;">
+                        {% set m_pct = (data.mastered / total_skills * 100) if total_skills else 0 %}
+                        {% set c_pct = (data.competent / total_skills * 100) if total_skills else 0 %}
+                        {% set i_pct = (data.in_progress / total_skills * 100) if total_skills else 0 %}
+                        <div class="progress-bar bg-success" style="width: {{ m_pct }}%" title="Mastered: {{ data.mastered }}"></div>
+                        <div class="progress-bar bg-primary" style="width: {{ c_pct }}%" title="Competent: {{ data.competent }}"></div>
+                        <div class="progress-bar bg-warning" style="width: {{ i_pct }}%" title="In Progress: {{ data.in_progress }}"></div>
+                    </div>
+                    <div class="d-flex gap-2 mt-1">
+                        <small><span class="text-success">●</span> {{ data.mastered }} mastered</small>
+                        <small><span class="text-primary">●</span> {{ data.competent }} competent</small>
+                        <small><span class="text-warning">●</span> {{ data.in_progress }} learning</small>
+                    </div>
+                </div>
+
+                <!-- Stats Row -->
+                <div class="row g-2 mb-3">
+                    <div class="col-4 text-center">
+                        <div class="p-2 rounded" style="background: var(--ds-surface-alt);">
+                            <div class="fw-bold" style="color: var(--ds-primary);">{{ data.total_lessons }}</div>
+                            <small class="text-muted">Lessons</small>
+                        </div>
+                    </div>
+                    <div class="col-4 text-center">
+                        <div class="p-2 rounded" style="background: var(--ds-surface-alt);">
+                            <div class="fw-bold" style="color: var(--ds-success);">{{ data.total_hours }}h</div>
+                            <small class="text-muted">Hours</small>
+                        </div>
+                    </div>
+                    <div class="col-4 text-center">
+                        <div class="p-2 rounded" style="background: var(--ds-surface-alt);">
+                            <div class="fw-bold" style="color: var(--ds-accent);">{{ data.mastered + data.competent }}/{{ total_skills }}</div>
+                            <small class="text-muted">Skills</small>
+                        </div>
+                    </div>
+                </div>
+
+                {% if data.last_lesson %}
+                <small class="text-muted d-block mb-3">
+                    <i class="fas fa-calendar-alt me-1"></i>Last lesson: {{ data.last_lesson.strftime('%b %d, %Y') }}
+                </small>
+                {% endif %}
+
+                <!-- Action Buttons -->
+                <div class="d-flex gap-2">
+                    <a href="{{ url_for('instructor.student_skills', student_id=data.student.id) }}"
+                       class="btn btn-sm btn-outline-primary rounded-pill flex-grow-1">
+                        <i class="fas fa-clipboard-check me-1"></i>Skill Checklist
+                    </a>
+                    <a href="{{ url_for('instructor.student_progress', student_id=data.student.id) }}"
+                       class="btn btn-sm btn-gradient rounded-pill flex-grow-1">
+                        <i class="fas fa-chart-line me-1"></i>Full Progress
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="card border-0">
+    <div class="card-body text-center py-5">
+        <div class="ds-empty-state">
+            <i class="fas fa-users" style="font-size: 3rem; color: var(--ds-primary); opacity: 0.3;"></i>
+            <h5 class="mt-3">No Students Yet</h5>
+            <p class="text-muted">You haven't taught any students yet. Register your first student to get started!</p>
+            <a href="{{ url_for('instructor.register_student') }}" class="btn btn-gradient rounded-pill px-4">
+                <i class="fas fa-user-plus me-2"></i>Register Student
+            </a>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

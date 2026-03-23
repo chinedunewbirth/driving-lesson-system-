@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+
+{% block title %}Reschedule Lesson - DriveSmart{% endblock %}
+
+{% block content %}
+<div class="ds-page-header d-flex justify-content-between align-items-center flex-wrap gap-3">
+    <div>
+        <h2 class="mb-1">Reschedule Lesson</h2>
+        <p class="text-muted mb-0">Change the date and time of your upcoming lesson</p>
+    </div>
+    <a href="{{ url_for('student.dashboard') }}" class="btn btn-outline-secondary rounded-pill px-3">
+        <i class="fas fa-arrow-left me-1"></i>Dashboard
+    </a>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <!-- Current Lesson Info -->
+        <div class="card border-0 mb-4">
+            <div class="card-header">
+                <h5 class="ds-section-title mb-0"><i class="fas fa-calendar-alt"></i>Current Lesson Details</h5>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-sm-6">
+                        <div class="d-flex align-items-center gap-2 mb-2">
+                            <i class="fas fa-user text-primary"></i>
+                            <strong>Instructor:</strong> {{ lesson.instructor.username if lesson.instructor else 'N/A' }}
+                        </div>
+                        <div class="d-flex align-items-center gap-2 mb-2">
+                            <i class="fas fa-calendar text-success"></i>
+                            <strong>Date:</strong> {{ lesson.date.strftime('%b %d, %Y') if lesson.date else 'TBD' }}
+                        </div>
+                    </div>
+                    <div class="col-sm-6">
+                        <div class="d-flex align-items-center gap-2 mb-2">
+                            <i class="fas fa-clock text-info"></i>
+                            <strong>Time:</strong> {{ lesson.time.strftime('%I:%M %p') if lesson.time else 'TBD' }}
+                        </div>
+                        <div class="d-flex align-items-center gap-2 mb-2">
+                            <i class="fas fa-hourglass-half text-warning"></i>
+                            <strong>Duration:</strong> {{ ((lesson.duration or 0) / 60)|round(1) }} hour(s)
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Reschedule Form -->
+        <div class="card border-0">
+            <div class="card-header">
+                <h5 class="ds-section-title mb-0"><i class="fas fa-calendar-check"></i>Select New Date &amp; Time</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    {{ form.hidden_tag() }}
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label for="new_date" class="form-label">New Date</label>
+                            {{ form.new_date(class="form-control", id="new_date", min=today if today else '') }}
+                            {% for error in form.new_date.errors %}
+                                <div class="text-danger small mt-1">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                        <div class="col-md-6">
+                            <label for="new_time" class="form-label">New Time</label>
+                            {{ form.new_time(class="form-control", id="new_time") }}
+                            {% for error in form.new_time.errors %}
+                                <div class="text-danger small mt-1">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                        <div class="col-12">
+                            <label for="reason" class="form-label">Reason (optional)</label>
+                            {{ form.reason(class="form-control", id="reason", rows="3", placeholder="Why are you rescheduling?") }}
+                        </div>
+                        <div class="col-12">
+                            <div class="alert alert-info py-2 mb-0">
+                                <small><i class="fas fa-info-circle me-1"></i>Your instructor will be notified about the rescheduled lesson.</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="d-flex gap-2 mt-4">
+                        <a href="{{ url_for('student.dashboard') }}" class="btn btn-outline-secondary rounded-pill px-4">Cancel</a>
+                        {{ form.submit(class="btn btn-gradient rounded-pill px-4") }}
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

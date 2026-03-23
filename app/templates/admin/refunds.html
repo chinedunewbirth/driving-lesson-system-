@@ -1,0 +1,131 @@
+{% extends "base.html" %}
+
+{% block title %}Refund Management - DriveSmart Admin{% endblock %}
+
+{% block content %}
+<div class="ds-page-header d-flex justify-content-between align-items-center flex-wrap gap-3">
+    <div>
+        <h2 class="mb-1">Refund Management</h2>
+        <p class="text-muted mb-0">Review and process student refund requests</p>
+    </div>
+    <a href="{{ url_for('admin.dashboard') }}" class="btn btn-outline-secondary rounded-pill px-3">
+        <i class="fas fa-arrow-left me-1"></i>Dashboard
+    </a>
+</div>
+
+<!-- Summary Cards -->
+<div class="row g-3 mb-4">
+    <div class="col-6 col-lg-3">
+        <div class="ds-stat-card">
+            <div class="ds-stat-icon warning"><i class="fas fa-clock"></i></div>
+            <div class="ds-stat-value">{{ refunds|selectattr('status','equalto','pending')|list|length }}</div>
+            <div class="ds-stat-label">Pending</div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="ds-stat-card">
+            <div class="ds-stat-icon success"><i class="fas fa-check-circle"></i></div>
+            <div class="ds-stat-value">{{ refunds|selectattr('status','in',['approved','processed'])|list|length }}</div>
+            <div class="ds-stat-label">Approved</div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="ds-stat-card">
+            <div class="ds-stat-icon danger"><i class="fas fa-times-circle"></i></div>
+            <div class="ds-stat-value">{{ refunds|selectattr('status','equalto','rejected')|list|length }}</div>
+            <div class="ds-stat-label">Rejected</div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="ds-stat-card">
+            <div class="ds-stat-icon primary"><i class="fas fa-sterling-sign"></i></div>
+            <div class="ds-stat-value">&pound;{{ '%.2f'|format(refunds|selectattr('status','in',['approved','processed'])|map(attribute='amount')|sum) }}</div>
+            <div class="ds-stat-label">Total Refunded</div>
+        </div>
+    </div>
+</div>
+
+{% if refunds %}
+<div class="card border-0">
+    <div class="card-header bg-transparent">
+        <h5 class="ds-section-title mb-0"><i class="fas fa-undo"></i>Refund Requests</h5>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Student</th>
+                        <th>Amount</th>
+                        <th>Reason</th>
+                        <th>Requested</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for refund in refunds %}
+                    <tr>
+                        <td>{{ refund.id }}</td>
+                        <td>
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="ds-avatar sm">{{ refund.student.username[0]|upper if refund.student else '?' }}</div>
+                                <strong>{{ refund.student.username if refund.student else 'N/A' }}</strong>
+                            </div>
+                        </td>
+                        <td class="fw-bold">&pound;{{ '%.2f'|format(refund.amount) }}</td>
+                        <td>
+                            <span title="{{ refund.reason }}">{{ refund.reason[:50] }}{{ '...' if refund.reason|length > 50 else '' }}</span>
+                        </td>
+                        <td>{{ refund.created_at.strftime('%d %b %Y') if refund.created_at else 'N/A' }}</td>
+                        <td>
+                            {% if refund.status == 'pending' %}
+                                <span class="badge rounded-pill bg-warning text-dark"><i class="fas fa-clock me-1"></i>Pending</span>
+                            {% elif refund.status in ['approved', 'processed'] %}
+                                <span class="badge rounded-pill bg-success"><i class="fas fa-check me-1"></i>{{ refund.status|capitalize }}</span>
+                            {% elif refund.status == 'rejected' %}
+                                <span class="badge rounded-pill bg-danger"><i class="fas fa-times me-1"></i>Rejected</span>
+                            {% else %}
+                                <span class="badge rounded-pill bg-secondary">{{ refund.status|capitalize }}</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if refund.status == 'pending' %}
+                            <div class="d-flex gap-1">
+                                <form method="POST" action="{{ url_for('admin.process_refund', refund_id=refund.id) }}" class="d-inline">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <input type="hidden" name="action" value="approved">
+                                    <button type="submit" class="btn btn-sm btn-outline-success rounded-pill" title="Approve">
+                                        <i class="fas fa-check"></i>
+                                    </button>
+                                </form>
+                                <form method="POST" action="{{ url_for('admin.process_refund', refund_id=refund.id) }}" class="d-inline">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <input type="hidden" name="action" value="rejected">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill" title="Reject">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </form>
+                            </div>
+                            {% elif refund.processed_at %}
+                                <small class="text-muted">{{ refund.processed_at.strftime('%d %b %Y') }}</small>
+                            {% else %}
+                                <span class="text-muted">—</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% else %}
+<div class="ds-empty-state">
+    <i class="fas fa-undo fa-3x mb-3" style="color: var(--ds-text-secondary);"></i>
+    <h4>No refund requests</h4>
+    <p class="text-muted">Refund requests from students will appear here.</p>
+</div>
+{% endif %}
+{% endblock %}

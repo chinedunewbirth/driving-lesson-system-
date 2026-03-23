@@ -42,6 +42,7 @@
                         <div class="col-md-6 mb-3">
                             {{ form.password.label(class="form-label") }}
                             {{ form.password(class="form-control form-control-lg", placeholder="Create a password") }}
+                            <div id="password-strength-msg" class="mt-1" style="display:none"></div>
                             {% for error in form.password.errors %}
                             <div class="text-danger mt-1">
                                 <small><i class="fas fa-exclamation-circle me-1"></i>{{ error }}</small>
@@ -51,6 +52,7 @@
                         <div class="col-md-6 mb-3">
                             {{ form.password2.label(class="form-label") }}
                             {{ form.password2(class="form-control form-control-lg", placeholder="Confirm password") }}
+                            <div id="password-match-msg" class="mt-1" style="display:none"></div>
                             {% for error in form.password2.errors %}
                             <div class="text-danger mt-1">
                                 <small><i class="fas fa-exclamation-circle me-1"></i>{{ error }}</small>
@@ -59,18 +61,29 @@
                         </div>
                     </div>
 
-                    <div class="mb-3">
-                        {{ form.role.label(class="form-label") }}
-                        {{ form.role(class="form-select form-select-lg") }}
-                        {% for error in form.role.errors %}
-                        <div class="text-danger mt-1">
-                            <small><i class="fas fa-exclamation-circle me-1"></i>{{ error }}</small>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            {{ form.role.label(class="form-label") }}
+                            {{ form.role(class="form-select form-select-lg") }}
+                            {% for error in form.role.errors %}
+                            <div class="text-danger mt-1">
+                                <small><i class="fas fa-exclamation-circle me-1"></i>{{ error }}</small>
+                            </div>
+                            {% endfor %}
                         </div>
-                        {% endfor %}
+                        <div class="col-md-6 mb-3">
+                            {{ form.location.label(class="form-label") }}
+                            {{ form.location(class="form-control form-control-lg", placeholder="Enter your city or area") }}
+                            {% for error in form.location.errors %}
+                            <div class="text-danger mt-1">
+                                <small><i class="fas fa-exclamation-circle me-1"></i>{{ error }}</small>
+                            </div>
+                            {% endfor %}
+                        </div>
                     </div>
 
                     <div class="d-grid mb-3">
-                        {{ form.submit(class="btn btn-gradient btn-lg") }}
+                        {{ form.submit(class="btn btn-gradient btn-lg", id="register-btn") }}
                     </div>
                 </form>
 
@@ -83,4 +96,118 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    var pw = document.getElementById('password');
+    var pw2 = document.getElementById('password2');
+    var matchMsg = document.getElementById('password-match-msg');
+    var strengthMsg = document.getElementById('password-strength-msg');
+    var btn = document.getElementById('register-btn');
+    var form = btn ? btn.closest('form') : null;
+
+    if (!pw || !pw2 || !matchMsg || !strengthMsg || !btn) return;
+
+    function checkStrength() {
+        var val = pw.value;
+        if (val.length === 0) {
+            strengthMsg.style.display = 'none';
+            pw.classList.remove('is-valid', 'is-invalid');
+            return;
+        }
+
+        var score = 0;
+        if (val.length >= 6) score++;
+        if (val.length >= 10) score++;
+        if (/[A-Z]/.test(val)) score++;
+        if (/[0-9]/.test(val)) score++;
+        if (/[^A-Za-z0-9]/.test(val)) score++;
+
+        strengthMsg.style.display = 'block';
+        if (val.length < 6) {
+            strengthMsg.className = 'mt-1 text-danger';
+            strengthMsg.innerHTML = '<small><i class="fas fa-exclamation-triangle me-1"></i>Minimum 6 characters required</small>';
+            pw.classList.remove('is-valid');
+            pw.classList.add('is-invalid');
+        } else if (score <= 2) {
+            strengthMsg.className = 'mt-1 text-warning';
+            strengthMsg.innerHTML = '<small><i class="fas fa-shield-alt me-1"></i>Weak password — try adding numbers or symbols</small>';
+            pw.classList.remove('is-invalid');
+            pw.classList.add('is-valid');
+        } else if (score <= 3) {
+            strengthMsg.className = 'mt-1 text-info';
+            strengthMsg.innerHTML = '<small><i class="fas fa-shield-alt me-1"></i>Fair password</small>';
+            pw.classList.remove('is-invalid');
+            pw.classList.add('is-valid');
+        } else {
+            strengthMsg.className = 'mt-1 text-success';
+            strengthMsg.innerHTML = '<small><i class="fas fa-shield-alt me-1"></i>Strong password</small>';
+            pw.classList.remove('is-invalid');
+            pw.classList.add('is-valid');
+        }
+    }
+
+    function checkMatch() {
+        var val1 = pw.value;
+        var val2 = pw2.value;
+
+        if (val2.length === 0) {
+            matchMsg.style.display = 'none';
+            pw2.classList.remove('is-valid', 'is-invalid');
+            return;
+        }
+
+        if (val1 === val2) {
+            matchMsg.style.display = 'block';
+            matchMsg.className = 'mt-1 text-success';
+            matchMsg.innerHTML = '<small><i class="fas fa-check-circle me-1"></i>Passwords match</small>';
+            pw2.classList.remove('is-invalid');
+            pw2.classList.add('is-valid');
+        } else {
+            matchMsg.style.display = 'block';
+            matchMsg.className = 'mt-1 text-danger';
+            matchMsg.innerHTML = '<small><i class="fas fa-times-circle me-1"></i>Passwords do not match</small>';
+            pw2.classList.remove('is-valid');
+            pw2.classList.add('is-invalid');
+        }
+    }
+
+    function updateButton() {
+        var tooShort = pw.value.length > 0 && pw.value.length < 6;
+        var mismatch = pw2.value.length > 0 && pw.value !== pw2.value;
+        if (tooShort || mismatch) {
+            btn.setAttribute('disabled', 'disabled');
+        } else {
+            btn.removeAttribute('disabled');
+        }
+    }
+
+    function validate() {
+        checkStrength();
+        checkMatch();
+        updateButton();
+    }
+
+    pw.addEventListener('input', validate);
+    pw.addEventListener('keyup', validate);
+    pw2.addEventListener('input', validate);
+    pw2.addEventListener('keyup', validate);
+
+    if (form) {
+        form.addEventListener('submit', function (e) {
+            if (pw.value.length < 6) {
+                e.preventDefault();
+                pw.focus();
+                return;
+            }
+            if (pw.value !== pw2.value) {
+                e.preventDefault();
+                pw2.focus();
+            }
+        });
+    }
+});
+</script>
 {% endblock %}

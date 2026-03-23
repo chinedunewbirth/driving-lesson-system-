@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+
+{% block title %}Review {{ instructor.username }} – DriveSmart{% endblock %}
+
+{% block content %}
+<div class="ds-page-header">
+    <a href="{{ url_for('main.instructor_reviews', instructor_id=instructor.id) }}" class="text-decoration-none text-muted mb-2 d-inline-block">
+        <i class="fas fa-arrow-left me-1"></i>Back to Reviews
+    </a>
+    <h2 class="mb-1">Review {{ instructor.username }}</h2>
+    <p class="text-muted mb-0">Share your experience with this instructor</p>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card border-0">
+            <div class="card-body p-4">
+                <!-- Instructor Info -->
+                <div class="d-flex align-items-center gap-3 mb-4 p-3 rounded-3" style="background:var(--ds-surface-alt)">
+                    <div class="ds-avatar" style="background:var(--ds-gradient);color:#fff;width:48px;height:48px;font-size:1.1rem">
+                        {{ instructor.username[0]|upper }}
+                    </div>
+                    <div>
+                        <h5 class="mb-0">{{ instructor.username }}</h5>
+                        <small class="text-muted">
+                            {{ instructor.instructor_profile.bio|truncate(60) if instructor.instructor_profile and instructor.instructor_profile.bio else 'Driving Instructor' }}
+                        </small>
+                    </div>
+                </div>
+
+                <form method="POST" novalidate>
+                    {{ form.hidden_tag() }}
+
+                    <div class="mb-3">
+                        {{ form.rating.label(class="form-label fw-semibold") }}
+                        {{ form.rating(class="form-select") }}
+                        {% for error in form.rating.errors %}
+                        <div class="invalid-feedback d-block">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+
+                    <div class="mb-3">
+                        {{ form.title.label(class="form-label fw-semibold") }}
+                        {{ form.title(class="form-control", placeholder="e.g. Great instructor, very patient!") }}
+                        {% for error in form.title.errors %}
+                        <div class="invalid-feedback d-block">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+
+                    <div class="mb-4">
+                        {{ form.comment.label(class="form-label fw-semibold") }}
+                        {{ form.comment(class="form-control", rows=5, placeholder="Tell others about your experience...") }}
+                        {% for error in form.comment.errors %}
+                        <div class="invalid-feedback d-block">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+
+                    <div class="d-flex justify-content-between">
+                        <a href="{{ url_for('main.instructor_reviews', instructor_id=instructor.id) }}" class="btn btn-outline-secondary rounded-pill px-4">
+                            Cancel
+                        </a>
+                        {{ form.submit(class="btn btn-gradient rounded-pill px-4") }}
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

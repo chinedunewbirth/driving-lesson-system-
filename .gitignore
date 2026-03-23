@@ -5,3 +5,7 @@ instance/
 *.db
 .pytest_cache/
 migrations/__pycache__/
+venv/
+*.egg-info/
+dist/
+build/

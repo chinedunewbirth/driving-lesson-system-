@@ -1,0 +1,154 @@
+{% extends "base.html" %}
+
+{% block title %}{{ instructor.username }} – Reviews{% endblock %}
+
+{% block content %}
+<div class="ds-page-header d-flex justify-content-between align-items-center flex-wrap gap-3">
+    <div>
+        <a href="{{ url_for('main.index') }}" class="text-decoration-none text-muted mb-2 d-inline-block">
+            <i class="fas fa-arrow-left me-1"></i>Back to Home
+        </a>
+        <h2 class="mb-1">
+            <div class="d-flex align-items-center gap-3">
+                <div class="ds-avatar" style="background:var(--ds-gradient);color:#fff;width:52px;height:52px;font-size:1.25rem">
+                    {{ instructor.username[0]|upper }}
+                </div>
+                <div>
+                    {{ instructor.username }}
+                    <div class="d-flex align-items-center gap-2 mt-1">
+                        {% if avg_rating > 0 %}
+                        <div class="text-warning">
+                            {% for i in range(1, 6) %}
+                                {% if i <= avg_rating|int %}
+                                    <i class="fas fa-star"></i>
+                                {% elif i - avg_rating < 1 %}
+                                    <i class="fas fa-star-half-alt"></i>
+                                {% else %}
+                                    <i class="far fa-star"></i>
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                        <span class="fw-bold">{{ avg_rating }}</span>
+                        <small class="text-muted">({{ reviews|length }} review{{ 's' if reviews|length != 1 else '' }})</small>
+                        {% else %}
+                        <small class="text-muted">No reviews yet</small>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </h2>
+    </div>
+    {% if current_user.is_authenticated and current_user.is_student() %}
+    <a href="{{ url_for('student.write_review', instructor_id=instructor.id) }}" class="btn btn-gradient rounded-pill px-4">
+        <i class="fas fa-pen me-2"></i>Write a Review
+    </a>
+    {% endif %}
+</div>
+
+<!-- Instructor Info -->
+{% if profile %}
+<div class="card border-0 mb-4">
+    <div class="card-body">
+        <div class="row g-3">
+            <div class="col-md-8">
+                <p class="mb-2">{{ profile.bio or 'Certified driving instructor' }}</p>
+            </div>
+            <div class="col-md-4 text-md-end">
+                {% if profile.hourly_rate %}
+                <span class="badge bg-warning text-dark fs-6 px-3 py-2">
+                    <i class="fas fa-sterling-sign me-1"></i>{{ '%.2f'|format(profile.hourly_rate) }}/hr
+                </span>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Rating Summary -->
+{% if reviews %}
+<div class="card border-0 mb-4">
+    <div class="card-body">
+        <div class="row g-3 align-items-center">
+            <div class="col-md-3 text-center">
+                <div class="display-3 fw-bold text-primary">{{ avg_rating }}</div>
+                <div class="text-warning mb-1">
+                    {% for i in range(1, 6) %}
+                        {% if i <= avg_rating|int %}
+                            <i class="fas fa-star"></i>
+                        {% elif i - avg_rating < 1 %}
+                            <i class="fas fa-star-half-alt"></i>
+                        {% else %}
+                            <i class="far fa-star"></i>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+                <small class="text-muted">{{ reviews|length }} review{{ 's' if reviews|length != 1 else '' }}</small>
+            </div>
+            <div class="col-md-9">
+                {% for star in range(5, 0, -1) %}
+                {% set star_count = reviews|selectattr('rating', 'equalto', star)|list|length %}
+                <div class="d-flex align-items-center gap-2 mb-1">
+                    <small class="text-muted" style="width:50px">{{ star }} star</small>
+                    <div class="progress flex-grow-1 rounded-pill" style="height:8px">
+                        <div class="progress-bar bg-warning rounded-pill" style="width:{{ (star_count / reviews|length * 100) if reviews|length > 0 else 0 }}%"></div>
+                    </div>
+                    <small class="text-muted" style="width:30px">{{ star_count }}</small>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Reviews List -->
+<div class="card border-0">
+    <div class="card-header">
+        <h5 class="ds-section-title mb-0">
+            <i class="fas fa-comments"></i>All Reviews
+        </h5>
+    </div>
+    <div class="card-body">
+        {% if reviews %}
+        {% for review in reviews %}
+        <div class="{% if not loop.last %}border-bottom pb-3 mb-3{% endif %}">
+            <div class="d-flex justify-content-between align-items-start mb-2">
+                <div class="d-flex align-items-center gap-2">
+                    <div class="ds-avatar sm" style="background:var(--ds-surface-alt);color:var(--ds-text)">
+                        {{ review.student.username[0]|upper }}
+                    </div>
+                    <div>
+                        <strong>{{ review.student.username }}</strong>
+                        <div class="text-warning">
+                            {% for i in range(1, 6) %}
+                                {% if i <= review.rating %}
+                                    <i class="fas fa-star fa-sm"></i>
+                                {% else %}
+                                    <i class="far fa-star fa-sm"></i>
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+                <small class="text-muted">{{ review.created_at.strftime('%b %d, %Y') }}</small>
+            </div>
+            <h6 class="mb-1">{{ review.title }}</h6>
+            <p class="text-muted mb-0">{{ review.comment }}</p>
+        </div>
+        {% endfor %}
+        {% else %}
+        <div class="ds-empty-state">
+            <i class="fas fa-star"></i>
+            <h5>No reviews yet</h5>
+            <p>Be the first to review this instructor!</p>
+            {% if current_user.is_authenticated and current_user.is_student() %}
+            <a href="{{ url_for('student.write_review', instructor_id=instructor.id) }}" class="btn btn-gradient rounded-pill px-4 mt-2">
+                <i class="fas fa-pen me-2"></i>Write a Review
+            </a>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

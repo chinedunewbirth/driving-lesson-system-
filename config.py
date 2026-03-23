@@ -33,9 +33,36 @@ class Config:
     STRIPE_WEBHOOK_SECRET = os.environ.get('STRIPE_WEBHOOK_SECRET', '')
     LESSON_PRICE_GBP = float(os.environ.get('LESSON_PRICE_GBP', '35.00'))
 
+    # Email Configuration (Flask-Mail)
+    MAIL_ENABLED = os.environ.get('MAIL_ENABLED', 'false').lower() == 'true'
+    MAIL_SERVER = os.environ.get('MAIL_SERVER', 'smtp.gmail.com')
+    MAIL_PORT = int(os.environ.get('MAIL_PORT', '587'))
+    MAIL_USE_TLS = os.environ.get('MAIL_USE_TLS', 'true').lower() == 'true'
+    MAIL_USERNAME = os.environ.get('MAIL_USERNAME', '')
+    MAIL_PASSWORD = os.environ.get('MAIL_PASSWORD', '')
+    MAIL_DEFAULT_SENDER = os.environ.get(
+        'MAIL_DEFAULT_SENDER', 'noreply@drivesmart.com'
+    )
+
+    # WhatsApp Configuration (Twilio)
+    WHATSAPP_ENABLED = os.environ.get(
+        'WHATSAPP_ENABLED', 'True'
+    ).lower() == 'true'
+    TWILIO_ACCOUNT_SID = os.environ.get('TWILIO_ACCOUNT_SID', '')
+    TWILIO_AUTH_TOKEN = os.environ.get('TWILIO_AUTH_TOKEN', '')
+    TWILIO_WHATSAPP_FROM = os.environ.get(
+        'TWILIO_WHATSAPP_FROM', 'whatsapp:+14155238886'
+    )
+
+    # SMS Configuration (Twilio)
+    SMS_ENABLED = os.environ.get('SMS_ENABLED', 'false').lower() == 'true'
+    TWILIO_SMS_FROM = os.environ.get('TWILIO_SMS_FROM', '')
+
 
 class TestingConfig(Config):
     TESTING = True
     SQLALCHEMY_DATABASE_URI = 'sqlite://'
-    USE_AI_CHATBOT = False  # Disable AI in tests
-    WTF_CSRF_ENABLED = False
+    USE_AI_CHATBOT = True  # Disable AI in tests
+    WTF_CSRF_ENABLED = True
+    MAIL_ENABLED = True
+    WHATSAPP_ENABLED = True
