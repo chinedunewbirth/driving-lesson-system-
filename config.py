@@ -58,6 +58,14 @@ class Config:
     SMS_ENABLED = os.environ.get('SMS_ENABLED', 'false').lower() == 'true'
     TWILIO_SMS_FROM = os.environ.get('TWILIO_SMS_FROM', '')
 
+    # OAuth / Social Login
+    GOOGLE_CLIENT_ID = os.environ.get('GOOGLE_CLIENT_ID', '')
+    GOOGLE_CLIENT_SECRET = os.environ.get('GOOGLE_CLIENT_SECRET', '')
+    GITHUB_CLIENT_ID = os.environ.get('GITHUB_CLIENT_ID', '')
+    GITHUB_CLIENT_SECRET = os.environ.get('GITHUB_CLIENT_SECRET', '')
+    MICROSOFT_CLIENT_ID = os.environ.get('MICROSOFT_CLIENT_ID', '')
+    MICROSOFT_CLIENT_SECRET = os.environ.get('MICROSOFT_CLIENT_SECRET', '')
+
 
 class TestingConfig(Config):
     TESTING = True

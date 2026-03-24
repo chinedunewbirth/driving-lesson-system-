@@ -1,9 +1,11 @@
-from flask import Blueprint, render_template, redirect, url_for, flash, request
+from flask import Blueprint, render_template, redirect, url_for, flash, request, current_app, session
 from flask_login import login_user, logout_user, current_user
 from app import db
 from app.models import User, InstructorProfile, StudentProfile
 from app.forms import LoginForm, RegistrationForm
 from app.notifications import notify_user
+from app.oauth import oauth
+import secrets
 
 bp = Blueprint('auth', __name__)
 
@@ -55,7 +57,9 @@ def register():
                 db.session.add(profile)
                 db.session.commit()
 
-            flash('Congratulations, you are now registered!')
+            # Auto-login the newly registered user
+            login_user(user)
+            flash('Congratulations, you are now registered and logged in!')
 
             # Send welcome notification (non-blocking — don't roll back user on failure)
             try:
@@ -68,9 +72,168 @@ def register():
             except Exception:
                 pass  # Notification failure should not affect registration
 
-            return redirect(url_for('auth.login'))
+            # Redirect to role-specific dashboard
+            if user.role == 'instructor':
+                return redirect(url_for('instructor.dashboard'))
+            elif user.role == 'admin':
+                return redirect(url_for('admin.dashboard'))
+            else:
+                return redirect(url_for('student.dashboard'))
         except Exception as e:
             db.session.rollback()
             flash(f'Registration failed: {str(e)}')
             return redirect(url_for('auth.register'))
     return render_template('auth/register.html', title='Register', form=form)
+
+
+# ── Helper: handle OAuth user (login or auto-register) ──────
+def _handle_oauth_user(email, name, provider):
+    """Find existing user or create new account from OAuth profile, then log in."""
+    user = User.query.filter_by(email=email).first()
+
+    if user is None:
+        # Auto-register with a unique username derived from email/name
+        base_username = (name or email.split('@')[0]).replace(' ', '_').lower()
+        username = base_username
+        counter = 1
+        while User.query.filter_by(username=username).first():
+            username = f'{base_username}_{counter}'
+            counter += 1
+
+        # Default role is student; user can change later or pick during OAuth
+        role = session.pop('oauth_role', 'student')
+        user = User(username=username, email=email, role=role)
+        # Set a random password (user authenticated via OAuth, not password)
+        user.set_password(secrets.token_urlsafe(32))
+        db.session.add(user)
+        db.session.commit()
+
+        # Create role-specific profile
+        if role == 'instructor':
+            db.session.add(InstructorProfile(user_id=user.id))
+        else:
+            db.session.add(StudentProfile(user_id=user.id))
+        db.session.commit()
+
+        flash(f'Account created via {provider}! Welcome, {username}.')
+
+        try:
+            notify_user(user, 'welcome', **{
+                'username': user.username,
+                'role': role.title(),
+                'email': user.email,
+                'login_url': url_for('auth.login', _external=True),
+            })
+        except Exception:
+            pass
+    else:
+        flash(f'Signed in with {provider}!')
+
+    login_user(user)
+
+    if user.role == 'instructor':
+        return redirect(url_for('instructor.dashboard'))
+    elif user.role == 'admin':
+        return redirect(url_for('admin.dashboard'))
+    return redirect(url_for('student.dashboard'))
+
+
+# ── Google OAuth ─────────────────────────────────────────────
+@bp.route('/login/google')
+def login_google():
+    if not current_app.config.get('GOOGLE_CLIENT_ID'):
+        flash('Google login is not configured.')
+        return redirect(url_for('auth.login'))
+    # Preserve role choice if coming from register page
+    role = request.args.get('role')
+    if role in ('instructor', 'student'):
+        session['oauth_role'] = role
+    redirect_uri = url_for('auth.google_callback', _external=True)
+    return oauth.google.authorize_redirect(redirect_uri)
+
+
+@bp.route('/login/google/callback')
+def google_callback():
+    try:
+        token = oauth.google.authorize_access_token()
+        user_info = token.get('userinfo') or oauth.google.userinfo()
+        email = user_info.get('email')
+        name = user_info.get('name', '')
+        if not email:
+            flash('Could not retrieve email from Google.')
+            return redirect(url_for('auth.login'))
+        return _handle_oauth_user(email, name, 'Google')
+    except Exception as e:
+        current_app.logger.error(f'Google OAuth error: {e}')
+        flash('Google sign-in failed. Please try again.')
+        return redirect(url_for('auth.login'))
+
+
+# ── GitHub OAuth ─────────────────────────────────────────────
+@bp.route('/login/github')
+def login_github():
+    if not current_app.config.get('GITHUB_CLIENT_ID'):
+        flash('GitHub login is not configured.')
+        return redirect(url_for('auth.login'))
+    role = request.args.get('role')
+    if role in ('instructor', 'student'):
+        session['oauth_role'] = role
+    redirect_uri = url_for('auth.github_callback', _external=True)
+    return oauth.github.authorize_redirect(redirect_uri)
+
+
+@bp.route('/login/github/callback')
+def github_callback():
+    try:
+        token = oauth.github.authorize_access_token()
+        resp = oauth.github.get('user', token=token)
+        profile = resp.json()
+        email = profile.get('email')
+
+        # GitHub may hide the email — fetch from /user/emails
+        if not email:
+            emails_resp = oauth.github.get('user/emails', token=token)
+            emails = emails_resp.json()
+            primary = next((e for e in emails if e.get('primary') and e.get('verified')), None)
+            email = primary['email'] if primary else None
+
+        if not email:
+            flash('Could not retrieve email from GitHub. Make sure your email is public or verified.')
+            return redirect(url_for('auth.login'))
+
+        name = profile.get('login', '')
+        return _handle_oauth_user(email, name, 'GitHub')
+    except Exception as e:
+        current_app.logger.error(f'GitHub OAuth error: {e}')
+        flash('GitHub sign-in failed. Please try again.')
+        return redirect(url_for('auth.login'))
+
+
+# ── Microsoft OAuth (Outlook / Hotmail / Live) ───────────────
+@bp.route('/login/microsoft')
+def login_microsoft():
+    if not current_app.config.get('MICROSOFT_CLIENT_ID'):
+        flash('Microsoft login is not configured.')
+        return redirect(url_for('auth.login'))
+    role = request.args.get('role')
+    if role in ('instructor', 'student'):
+        session['oauth_role'] = role
+    redirect_uri = url_for('auth.microsoft_callback', _external=True)
+    return oauth.microsoft.authorize_redirect(redirect_uri)
+
+
+@bp.route('/login/microsoft/callback')
+def microsoft_callback():
+    try:
+        token = oauth.microsoft.authorize_access_token()
+        user_info = token.get('userinfo') or oauth.microsoft.userinfo()
+        email = user_info.get('email') or user_info.get('preferred_username')
+        name = user_info.get('name', '')
+        if not email:
+            flash('Could not retrieve email from Microsoft.')
+            return redirect(url_for('auth.login'))
+        return _handle_oauth_user(email, name, 'Microsoft')
+    except Exception as e:
+        current_app.logger.error(f'Microsoft OAuth error: {e}')
+        flash('Microsoft sign-in failed. Please try again.')
+        return redirect(url_for('auth.login'))

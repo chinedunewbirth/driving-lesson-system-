@@ -43,6 +43,14 @@ def create_app(config_class=Config):
         format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
     )
 
+    # Initialize Prometheus metrics
+    from app.metrics import init_metrics
+    init_metrics(app)
+
+    # Initialize OAuth social login
+    from app.oauth import init_oauth
+    init_oauth(app)
+
     # Register blueprints
     from app.routes import auth, main, student, instructor, admin, chatbot
     app.register_blueprint(auth.bp)

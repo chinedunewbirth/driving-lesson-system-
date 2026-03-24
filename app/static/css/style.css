@@ -459,6 +459,78 @@ a:hover { color: var(--ds-primary-dark); }
 
 .ds-auth-body { padding: 2rem; }
 
+/* ========= SOCIAL LOGIN BUTTONS ========= */
+.ds-social-login {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+}
+
+.btn-social {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: .6rem;
+    font-weight: 600;
+    font-size: .9rem;
+    padding: .65rem 1rem;
+    border-radius: var(--ds-radius-sm);
+    border: 1.5px solid var(--ds-border);
+    background: var(--ds-surface);
+    color: var(--ds-text);
+    transition: all var(--ds-transition);
+    text-decoration: none;
+}
+.btn-social:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--ds-shadow);
+    text-decoration: none;
+    color: var(--ds-text);
+}
+
+.btn-social .social-icon { flex-shrink: 0; }
+.btn-social .social-icon-fa { font-size: 1.2rem; flex-shrink: 0; }
+
+.btn-google:hover {
+    border-color: #4285F4;
+    background: #f8faff;
+}
+
+.btn-github {
+    background: #24292e;
+    color: #fff;
+    border-color: #24292e;
+}
+.btn-github:hover {
+    background: #1b1f23;
+    color: #fff;
+    border-color: #1b1f23;
+}
+
+.btn-microsoft:hover {
+    border-color: #00A4EF;
+    background: #f0f9ff;
+}
+
+/* ----- Divider ----- */
+.ds-divider {
+    display: flex;
+    align-items: center;
+    text-align: center;
+    color: var(--ds-text-secondary);
+    font-size: .8rem;
+}
+.ds-divider::before,
+.ds-divider::after {
+    content: '';
+    flex: 1;
+    border-bottom: 1px solid var(--ds-border);
+}
+.ds-divider span {
+    padding: 0 .75rem;
+    white-space: nowrap;
+}
+
 /* ========= DASHBOARD ========= */
 .ds-page-header {
     margin-bottom: 1.5rem;
