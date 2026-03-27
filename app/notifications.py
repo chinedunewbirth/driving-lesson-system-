@@ -11,6 +11,42 @@ logger = logging.getLogger(__name__)
 # ── Email Templates ──────────────────────────────────────────────
 
 EMAIL_TEMPLATES = {
+    'email_confirm': {
+        'subject': 'Confirm Your Email – DriveSmart',
+        'body': '''
+Hello {{ username }},
+
+Thank you for registering with DriveSmart!
+
+Please confirm your email address by clicking the link below:
+
+{{ confirm_url }}
+
+This link will expire in 24 hours.
+
+If you did not create an account, please ignore this email.
+
+The DriveSmart Team
+'''
+    },
+    'password_reset': {
+        'subject': 'Reset Your Password – DriveSmart',
+        'body': '''
+Hello {{ username }},
+
+We received a request to reset your password.
+
+Click the link below to set a new password:
+
+{{ reset_url }}
+
+This link will expire in 1 hour.
+
+If you did not request a password reset, please ignore this email. Your password will remain unchanged.
+
+The DriveSmart Team
+'''
+    },
     'welcome': {
         'subject': 'Welcome to DriveSmart! 🚗',
         'body': '''
@@ -225,6 +261,10 @@ The DriveSmart Team
 # ── WhatsApp Templates ───────────────────────────────────────────
 
 WHATSAPP_TEMPLATES = {
+    'email_confirm': (
+        '✉️ DriveSmart: Please confirm your email. '
+        'Check your inbox for the confirmation link.'
+    ),
     'welcome': (
         '🚗 Welcome to DriveSmart, {{ username }}! '
         'Your {{ role }} account is ready. '
@@ -294,6 +334,7 @@ WHATSAPP_TEMPLATES = {
 # ── SMS Templates (short text, reuses WhatsApp style) ────────────
 
 SMS_TEMPLATES = {
+    'email_confirm': 'DriveSmart: Please confirm your email by clicking the link sent to your inbox.',
     'welcome': 'Welcome to DriveSmart, {{ username }}! Your {{ role }} account is ready. Log in to get started.',
     'lesson_booked': 'DriveSmart: Lesson booked! {{ date }} at {{ time }} with {{ instructor_name }}. Duration: {{ duration }}h.',
     'lesson_cancelled': 'DriveSmart: Lesson on {{ date }} at {{ time }} cancelled by {{ cancelled_by }}.',
@@ -312,6 +353,7 @@ SMS_TEMPLATES = {
 # ── In-App Notification Category Map ─────────────────────────────
 
 INAPP_CATEGORY_MAP = {
+    'email_confirm': 'info',
     'welcome': 'success',
     'lesson_booked': 'success',
     'lesson_cancelled': 'danger',

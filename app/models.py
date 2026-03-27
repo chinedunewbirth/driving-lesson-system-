@@ -2,6 +2,8 @@ from app import db, login
 from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime
+from itsdangerous import URLSafeTimedSerializer
+from flask import current_app
 
 
 class User(UserMixin, db.Model):
@@ -10,6 +12,34 @@ class User(UserMixin, db.Model):
     email = db.Column(db.String(120), index=True, unique=True)
     password_hash = db.Column(db.String(128))
     role = db.Column(db.String(20), default='student')  # admin, instructor, student
+    email_confirmed = db.Column(db.Boolean, default=False)
+    confirmed_at = db.Column(db.DateTime, nullable=True)
+
+    def generate_confirmation_token(self):
+        s = URLSafeTimedSerializer(current_app.config['SECRET_KEY'])
+        return s.dumps(self.email, salt='email-confirm')
+
+    @staticmethod
+    def verify_confirmation_token(token, max_age=86400):
+        s = URLSafeTimedSerializer(current_app.config['SECRET_KEY'])
+        try:
+            email = s.loads(token, salt='email-confirm', max_age=max_age)
+        except Exception:
+            return None
+        return User.query.filter_by(email=email).first()
+
+    def generate_reset_token(self):
+        s = URLSafeTimedSerializer(current_app.config['SECRET_KEY'])
+        return s.dumps(self.email, salt='password-reset')
+
+    @staticmethod
+    def verify_reset_token(token, max_age=3600):
+        s = URLSafeTimedSerializer(current_app.config['SECRET_KEY'])
+        try:
+            email = s.loads(token, salt='password-reset', max_age=max_age)
+        except Exception:
+            return None
+        return User.query.filter_by(email=email).first()
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)

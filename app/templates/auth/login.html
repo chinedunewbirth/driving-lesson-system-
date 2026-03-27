@@ -65,6 +65,9 @@
                             <small><i class="fas fa-exclamation-circle me-1"></i>{{ error }}</small>
                         </div>
                         {% endfor %}
+                        <div class="text-end mt-1">
+                            <a href="{{ url_for('auth.forgot_password') }}" class="small text-muted">Forgot password?</a>
+                        </div>
                     </div>
 
                     <div class="d-grid mb-3">

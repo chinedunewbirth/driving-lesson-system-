@@ -26,7 +26,11 @@ class RegistrationForm(FlaskForm):
         choices=[('instructor', 'Instructor'), ('student', 'Student')],
         validators=[DataRequired()]
     )
-    location = StringField('Location', validators=[Optional()])
+    address_line1 = StringField('Address Line 1', validators=[Optional()])
+    address_line2 = StringField('Address Line 2', validators=[Optional()])
+    city = StringField('City / Town', validators=[Optional()])
+    county = StringField('County', validators=[Optional()])
+    postcode = StringField('Postcode', validators=[Optional()])
     submit = SubmitField('Register')
 
     def validate_username(self, username):

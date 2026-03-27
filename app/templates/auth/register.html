@@ -102,10 +102,54 @@
                             </div>
                             {% endfor %}
                         </div>
-                        <div class="col-md-6 mb-3">
-                            {{ form.location.label(class="form-label") }}
-                            {{ form.location(class="form-control form-control-lg", placeholder="Enter your city or area") }}
-                            {% for error in form.location.errors %}
+                    </div>
+
+                    <hr class="my-3">
+                    <h6 class="mb-3"><i class="fas fa-map-marker-alt me-2"></i>Address</h6>
+
+                    <div class="mb-3">
+                        {{ form.address_line1.label(class="form-label") }}
+                        {{ form.address_line1(class="form-control form-control-lg", placeholder="House number and street") }}
+                        {% for error in form.address_line1.errors %}
+                        <div class="text-danger mt-1">
+                            <small><i class="fas fa-exclamation-circle me-1"></i>{{ error }}</small>
+                        </div>
+                        {% endfor %}
+                    </div>
+
+                    <div class="mb-3">
+                        {{ form.address_line2.label(class="form-label") }}
+                        {{ form.address_line2(class="form-control form-control-lg", placeholder="Flat, suite, building (optional)") }}
+                        {% for error in form.address_line2.errors %}
+                        <div class="text-danger mt-1">
+                            <small><i class="fas fa-exclamation-circle me-1"></i>{{ error }}</small>
+                        </div>
+                        {% endfor %}
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            {{ form.city.label(class="form-label") }}
+                            {{ form.city(class="form-control form-control-lg", placeholder="City or town") }}
+                            {% for error in form.city.errors %}
+                            <div class="text-danger mt-1">
+                                <small><i class="fas fa-exclamation-circle me-1"></i>{{ error }}</small>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            {{ form.county.label(class="form-label") }}
+                            {{ form.county(class="form-control form-control-lg", placeholder="County") }}
+                            {% for error in form.county.errors %}
+                            <div class="text-danger mt-1">
+                                <small><i class="fas fa-exclamation-circle me-1"></i>{{ error }}</small>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            {{ form.postcode.label(class="form-label") }}
+                            {{ form.postcode(class="form-control form-control-lg", placeholder="Postcode") }}
+                            {% for error in form.postcode.errors %}
                             <div class="text-danger mt-1">
                                 <small><i class="fas fa-exclamation-circle me-1"></i>{{ error }}</small>
                             </div>
@@ -127,10 +171,265 @@
         </div>
     </div>
 </div>
+
+<!-- Registration AI Assistant Widget -->
+<div id="reg-assistant" style="position:fixed;bottom:24px;right:24px;z-index:1050;">
+    <!-- Toggle Button -->
+    <button id="reg-assistant-toggle" class="btn btn-gradient shadow-lg"
+            style="width:56px;height:56px;border-radius:50%;font-size:1.4rem;display:flex;align-items:center;justify-content:center;"
+            title="Need help registering?">
+        <i class="fas fa-robot"></i>
+    </button>
+
+    <!-- Chat Panel -->
+    <div id="reg-assistant-panel" class="card border-0 shadow-lg" style="display:none;position:absolute;bottom:68px;right:0;width:360px;max-width:90vw;border-radius:16px;overflow:hidden;">
+        <div class="card-header py-2 px-3 d-flex align-items-center justify-content-between" style="background:var(--ds-gradient,linear-gradient(135deg,#4f46e5,#7c3aed));color:#fff;">
+            <div class="d-flex align-items-center gap-2">
+                <i class="fas fa-robot"></i>
+                <div>
+                    <strong class="small">Registration Assistant</strong><br>
+                    <span class="opacity-75" style="font-size:.7rem;">Ask me anything about signing up</span>
+                </div>
+            </div>
+            <button id="reg-assistant-close" class="btn btn-sm btn-link text-white p-0" style="font-size:1.1rem;">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+
+        <div id="reg-chat-messages" class="card-body p-2" style="height:280px;overflow-y:auto;background:#f8f9fa;">
+            <!-- Welcome message -->
+            <div class="d-flex mb-2">
+                <div class="p-2 rounded-3 small" style="background:#fff;max-width:85%;box-shadow:0 1px 2px rgba(0,0,0,.08);">
+                    <strong class="text-primary" style="font-size:.75rem;"><i class="fas fa-robot me-1"></i>Assistant</strong>
+                    <p class="mb-1 mt-1">Hi! I'm here to help you register. Ask me about:</p>
+                    <div class="d-flex flex-wrap gap-1 mt-1">
+                        <span class="badge rounded-pill reg-chip" style="background:rgba(79,70,229,.1);color:#4f46e5;cursor:pointer;font-size:.7rem;" data-q="What's the difference between student and instructor?">👤 Roles</span>
+                        <span class="badge rounded-pill reg-chip" style="background:rgba(79,70,229,.1);color:#4f46e5;cursor:pointer;font-size:.7rem;" data-q="What makes a strong password?">🔒 Password</span>
+                        <span class="badge rounded-pill reg-chip" style="background:rgba(79,70,229,.1);color:#4f46e5;cursor:pointer;font-size:.7rem;" data-q="Why do you need my address?">📍 Address</span>
+                        <span class="badge rounded-pill reg-chip" style="background:rgba(79,70,229,.1);color:#4f46e5;cursor:pointer;font-size:.7rem;" data-q="What happens after I register?">✉️ Next Steps</span>
+                        <span class="badge rounded-pill reg-chip" style="background:rgba(79,70,229,.1);color:#4f46e5;cursor:pointer;font-size:.7rem;" data-q="How much do lessons cost?">💷 Pricing</span>
+                        <span class="badge rounded-pill" id="quick-reg-chip" style="background:rgba(16,185,129,.12);color:#059669;cursor:pointer;font-size:.7rem;border:1px solid rgba(16,185,129,.3);">⚡ Quick Register</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card-footer p-2" style="background:#fff;border-top:1px solid #eee;">
+            <form id="reg-chat-form" class="d-flex gap-1">
+                <input type="text" id="reg-chat-input" class="form-control form-control-sm" placeholder="Ask about registration..." maxlength="500" autocomplete="off">
+                <button type="submit" class="btn btn-sm btn-gradient" style="border-radius:8px;min-width:38px;">
+                    <i class="fas fa-paper-plane"></i>
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
 {% endblock %}
 
 {% block scripts %}
 <script>
+/* ── Registration AI Assistant ──────────────────────────────── */
+(function() {
+    var toggle = document.getElementById('reg-assistant-toggle');
+    var panel = document.getElementById('reg-assistant-panel');
+    var closeBtn = document.getElementById('reg-assistant-close');
+    var form = document.getElementById('reg-chat-form');
+    var input = document.getElementById('reg-chat-input');
+    var messages = document.getElementById('reg-chat-messages');
+    if (!toggle || !panel) return;
+
+    function getCSRF() {
+        var el = document.querySelector('meta[name="csrf-token"]');
+        return el ? el.getAttribute('content') : '';
+    }
+
+    toggle.addEventListener('click', function() {
+        var open = panel.style.display === 'none';
+        panel.style.display = open ? 'block' : 'none';
+        if (open) input.focus();
+    });
+    closeBtn.addEventListener('click', function() { panel.style.display = 'none'; });
+
+    function addMsg(text, isUser) {
+        var wrap = document.createElement('div');
+        wrap.className = 'd-flex mb-2' + (isUser ? ' justify-content-end' : '');
+        var bubble = document.createElement('div');
+        bubble.className = 'p-2 rounded-3 small';
+        bubble.style.maxWidth = '85%';
+        if (isUser) {
+            bubble.style.background = 'var(--ds-gradient, linear-gradient(135deg,#4f46e5,#7c3aed))';
+            bubble.style.color = '#fff';
+            bubble.textContent = text;
+        } else {
+            bubble.style.background = '#fff';
+            bubble.style.boxShadow = '0 1px 2px rgba(0,0,0,.08)';
+            bubble.innerHTML = '<strong class="text-primary" style="font-size:.75rem;"><i class="fas fa-robot me-1"></i>Assistant</strong><div class="mt-1">' + formatMarkdown(text) + '</div>';
+        }
+        wrap.appendChild(bubble);
+        messages.appendChild(wrap);
+        messages.scrollTop = messages.scrollHeight;
+    }
+
+    function formatMarkdown(t) {
+        return t.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+                .replace(/\n- /g, '<br>• ')
+                .replace(/\n\n/g, '<br><br>')
+                .replace(/\n/g, '<br>');
+    }
+
+    function showTyping() {
+        var el = document.createElement('div');
+        el.id = 'reg-typing';
+        el.className = 'd-flex mb-2';
+        el.innerHTML = '<div class="p-2 rounded-3 small" style="background:#fff;"><em class="text-muted" style="font-size:.75rem;"><i class="fas fa-circle-notch fa-spin me-1"></i>Thinking...</em></div>';
+        messages.appendChild(el);
+        messages.scrollTop = messages.scrollHeight;
+    }
+    function hideTyping() {
+        var el = document.getElementById('reg-typing');
+        if (el) el.remove();
+    }
+
+    function sendQuestion(q) {
+        if (!q.trim()) return;
+        addMsg(q, true);
+        input.value = '';
+        showTyping();
+
+        fetch('/api/registration-assistant', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCSRF() },
+            body: JSON.stringify({ message: q })
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            hideTyping();
+            addMsg(data.response || 'Sorry, please try again.', false);
+        })
+        .catch(function() {
+            hideTyping();
+            addMsg('Sorry, something went wrong. Please try again!', false);
+        });
+    }
+
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        sendQuestion(input.value);
+    });
+
+    document.querySelectorAll('.reg-chip').forEach(function(chip) {
+        chip.addEventListener('click', function() {
+            sendQuestion(this.getAttribute('data-q'));
+        });
+    });
+
+    /* ── Quick Register (one-click with email) ── */
+    var qrChip = document.getElementById('quick-reg-chip');
+    if (qrChip) {
+        qrChip.addEventListener('click', function() {
+            // Show email input form inside the chat
+            var existing = document.getElementById('qr-email-form');
+            if (existing) { existing.querySelector('input').focus(); return; }
+
+            addMsg('I want to quick register!', true);
+
+            var wrap = document.createElement('div');
+            wrap.className = 'd-flex mb-2';
+            var bubble = document.createElement('div');
+            bubble.className = 'p-2 rounded-3 small';
+            bubble.style.maxWidth = '85%';
+            bubble.style.background = '#fff';
+            bubble.style.boxShadow = '0 1px 2px rgba(0,0,0,.08)';
+            bubble.innerHTML =
+                '<strong class="text-primary" style="font-size:.75rem;"><i class="fas fa-robot me-1"></i>Assistant</strong>' +
+                '<p class="mb-2 mt-1">Great! Enter your email and phone number and I\'ll create your student account instantly:</p>' +
+                '<form id="qr-email-form">' +
+                '  <div class="mb-2">' +
+                '    <div class="input-group input-group-sm">' +
+                '      <span class="input-group-text" style="font-size:.75rem;"><i class="fas fa-envelope"></i></span>' +
+                '      <input type="email" id="qr-email-input" class="form-control form-control-sm" placeholder="your-email@example.com" required autocomplete="email" style="font-size:.85rem;">' +
+                '    </div>' +
+                '  </div>' +
+                '  <div class="mb-2">' +
+                '    <div class="input-group input-group-sm">' +
+                '      <span class="input-group-text" style="font-size:.75rem;"><i class="fas fa-phone"></i></span>' +
+                '      <input type="tel" id="qr-phone-input" class="form-control form-control-sm" placeholder="07700 900123" required autocomplete="tel" style="font-size:.85rem;">' +
+                '    </div>' +
+                '  </div>' +
+                '  <button type="submit" class="btn btn-sm text-white w-100" style="background:#059669;border-radius:8px;font-size:.8rem;">' +
+                '    <i class="fas fa-bolt me-1"></i>Create My Account</button>' +
+                '</form>' +
+                '<div class="text-muted mt-1" style="font-size:.65rem;"><i class="fas fa-shield-alt me-1"></i>We\'ll email you a confirmation link and temporary password.</div>';
+            wrap.appendChild(bubble);
+            messages.appendChild(wrap);
+            messages.scrollTop = messages.scrollHeight;
+
+            var qrForm = document.getElementById('qr-email-form');
+            var qrInput = document.getElementById('qr-email-input');
+            qrInput.focus();
+
+            var qrPhoneInput = document.getElementById('qr-phone-input');
+
+            qrForm.addEventListener('submit', function(ev) {
+                ev.preventDefault();
+                var email = qrInput.value.trim();
+                var phone = qrPhoneInput.value.trim();
+                if (!email || !phone) {
+                    if (!email) qrInput.classList.add('is-invalid');
+                    if (!phone) qrPhoneInput.classList.add('is-invalid');
+                    return;
+                }
+                qrInput.classList.remove('is-invalid');
+                qrPhoneInput.classList.remove('is-invalid');
+
+                // Disable form during submission
+                qrInput.disabled = true;
+                qrPhoneInput.disabled = true;
+                qrForm.querySelector('button').disabled = true;
+                qrForm.querySelector('button').innerHTML = '<i class="fas fa-circle-notch fa-spin me-1"></i>Creating...';
+
+                showTyping();
+
+                fetch('/api/quick-register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCSRF() },
+                    body: JSON.stringify({ email: email, phone: phone })
+                })
+                .then(function(r) { return r.json().then(function(d) { return { ok: r.ok, data: d }; }); })
+                .then(function(result) {
+                    hideTyping();
+                    // Remove the form bubble
+                    wrap.remove();
+                    if (result.data.success) {
+                        addMsg(result.data.message, false);
+                        // Show login link
+                        var linkWrap = document.createElement('div');
+                        linkWrap.className = 'd-flex mb-2';
+                        linkWrap.innerHTML =
+                            '<div class="p-2 rounded-3 small" style="background:#fff;max-width:85%;box-shadow:0 1px 2px rgba(0,0,0,.08);">' +
+                            '<a href="/login" class="btn btn-sm btn-gradient mt-1" style="border-radius:8px;font-size:.8rem;">' +
+                            '<i class="fas fa-sign-in-alt me-1"></i>Go to Login</a></div>';
+                        messages.appendChild(linkWrap);
+                        messages.scrollTop = messages.scrollHeight;
+                    } else {
+                        addMsg(result.data.message || 'Registration failed. Please try again.', false);
+                        // Re-enable form
+                        qrInput.disabled = false;
+                        qrPhoneInput.disabled = false;
+                        qrForm.querySelector('button').disabled = false;
+                        qrForm.querySelector('button').innerHTML = '<i class="fas fa-bolt me-1"></i>Create My Account';
+                    }
+                })
+                .catch(function() {
+                    hideTyping();
+                    addMsg('Something went wrong. Please try the full registration form.', false);
+                });
+            });
+        });
+    }
+})();
+
+/* ── Password Validation ────────────────────────────────────── */
 document.addEventListener('DOMContentLoaded', function () {
     var pw = document.getElementById('password');
     var pw2 = document.getElementById('password2');

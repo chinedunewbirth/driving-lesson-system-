@@ -27,7 +27,7 @@
                 <div class="px-3 py-2" style="background: var(--ds-surface-alt); border-bottom: 1px solid var(--ds-border);">
                     <small class="text-muted">
                         <i class="fas fa-info-circle me-1 text-primary"></i>
-                        I can help with driving lessons, booking, pricing, and requirements.
+                        I can book lessons, find instructors, reschedule, request refunds, and answer questions.
                     </small>
                 </div>
 
@@ -44,9 +44,11 @@
                                     <div>
                                         <small class="text-muted">Try asking:</small>
                                         <div class="mt-1 d-flex flex-wrap gap-1">
-                                            <span class="badge rounded-pill suggestion-chip" style="background: var(--ds-gradient-subtle); color: var(--ds-primary); cursor: pointer;" data-text="How do I book a lesson?">📅 Book a lesson</span>
-                                            <span class="badge rounded-pill suggestion-chip" style="background: var(--ds-gradient-subtle); color: var(--ds-primary); cursor: pointer;" data-text="What are your prices?">💰 Pricing info</span>
-                                            <span class="badge rounded-pill suggestion-chip" style="background: var(--ds-gradient-subtle); color: var(--ds-primary); cursor: pointer;" data-text="What should I bring to my first lesson?">📋 Requirements</span>
+                                            <span class="badge rounded-pill suggestion-chip" style="background: var(--ds-gradient-subtle); color: var(--ds-primary); cursor: pointer;" data-text="Show my upcoming lessons">📅 My Lessons</span>
+                                            <span class="badge rounded-pill suggestion-chip" style="background: var(--ds-gradient-subtle); color: var(--ds-primary); cursor: pointer;" data-text="Find instructors near me">📍 Find Instructor</span>
+                                            <span class="badge rounded-pill suggestion-chip" style="background: var(--ds-gradient-subtle); color: var(--ds-primary); cursor: pointer;" data-text="I want to book a lesson">📝 Book Lesson</span>
+                                            <span class="badge rounded-pill suggestion-chip" style="background: var(--ds-gradient-subtle); color: var(--ds-primary); cursor: pointer;" data-text="I need to reschedule a lesson">🔄 Reschedule</span>
+                                            <span class="badge rounded-pill suggestion-chip" style="background: var(--ds-gradient-subtle); color: var(--ds-primary); cursor: pointer;" data-text="I want a refund">💰 Refund</span>
                                         </div>
                                     </div>
                                 </div>
@@ -92,13 +94,21 @@
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body p-4">
+                <h6 class="text-muted mb-2"><i class="fas fa-bolt me-1"></i>Actions</h6>
+                <div class="row g-2 mb-3">
+                    <div class="col-6"><button class="btn btn-outline-primary w-100 text-start rounded-pill suggestion-btn" data-message="Show my upcoming lessons">📅 My Lessons</button></div>
+                    <div class="col-6"><button class="btn btn-outline-primary w-100 text-start rounded-pill suggestion-btn" data-message="I want to book a lesson">📝 Book Lesson</button></div>
+                    <div class="col-6"><button class="btn btn-outline-primary w-100 text-start rounded-pill suggestion-btn" data-message="Find instructors near me">📍 Find Instructor</button></div>
+                    <div class="col-6"><button class="btn btn-outline-primary w-100 text-start rounded-pill suggestion-btn" data-message="I need to reschedule a lesson">🔄 Reschedule</button></div>
+                    <div class="col-6"><button class="btn btn-outline-primary w-100 text-start rounded-pill suggestion-btn" data-message="I want a refund">💰 Request Refund</button></div>
+                    <div class="col-6"><button class="btn btn-outline-primary w-100 text-start rounded-pill suggestion-btn" data-message="Cancel a lesson">❌ Cancel Lesson</button></div>
+                </div>
+                <h6 class="text-muted mb-2"><i class="fas fa-question-circle me-1"></i>Questions</h6>
                 <div class="row g-2">
-                    <div class="col-6"><button class="btn btn-outline-primary w-100 text-start rounded-pill suggestion-btn" data-message="How do I book a driving lesson?">📅 Book Lesson</button></div>
-                    <div class="col-6"><button class="btn btn-outline-primary w-100 text-start rounded-pill suggestion-btn" data-message="What are your lesson prices?">💰 Pricing</button></div>
-                    <div class="col-6"><button class="btn btn-outline-primary w-100 text-start rounded-pill suggestion-btn" data-message="How do I cancel a lesson?">❌ Cancellation</button></div>
-                    <div class="col-6"><button class="btn btn-outline-primary w-100 text-start rounded-pill suggestion-btn" data-message="What do I need for my first lesson?">📋 Requirements</button></div>
-                    <div class="col-6"><button class="btn btn-outline-primary w-100 text-start rounded-pill suggestion-btn" data-message="How can I contact support?">📞 Contact Info</button></div>
-                    <div class="col-6"><button class="btn btn-outline-primary w-100 text-start rounded-pill suggestion-btn" data-message="Tell me about driving safety tips">🛡️ Safety Tips</button></div>
+                    <div class="col-6"><button class="btn btn-outline-secondary w-100 text-start rounded-pill suggestion-btn" data-message="What are your lesson prices?">💷 Pricing</button></div>
+                    <div class="col-6"><button class="btn btn-outline-secondary w-100 text-start rounded-pill suggestion-btn" data-message="What do I need for my first lesson?">📋 Requirements</button></div>
+                    <div class="col-6"><button class="btn btn-outline-secondary w-100 text-start rounded-pill suggestion-btn" data-message="How can I contact support?">📞 Contact Info</button></div>
+                    <div class="col-6"><button class="btn btn-outline-secondary w-100 text-start rounded-pill suggestion-btn" data-message="Show my progress">📊 My Progress</button></div>
                 </div>
             </div>
         </div>
